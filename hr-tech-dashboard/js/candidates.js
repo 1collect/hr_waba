@@ -21,20 +21,19 @@
     const sidebar = document.getElementById('sidebar');
     const topbar = document.getElementById('topbar');
     const overlays = document.getElementById('app-overlays');
+    const userName = document.body.dataset.userName || 'Пользователь';
     sidebar.replaceChildren(UI.sidebar({
       activePage: 'candidates',
-      user: { name: 'HR-менеджер', role: 'Команда подбора' },
+      user: { name: userName, role: 'Сотрудник' },
       items: [
-        { page: 'dashboard', label: 'Главная', icon: 'home', href: '/' },
-        { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' },
-        { page: 'analytics', label: 'Аналитика', icon: 'chart', href: '/static/hr-tech-dashboard/analytics.html' },
-        { page: 'admin', label: 'Настройки', icon: 'settings', href: '/admin/' }
+        { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' }
       ]
     }));
     const topbarContent = UI.topbar({
-      title: 'TalentFlow',
-      context: 'Рекрутинг',
-      user: { name: 'HR-менеджер' },
+      title: 'Рекрутинг',
+      context: '',
+      user: { name: userName },
+      showNotifications: false,
       onMenuClick() {
         setSidebarOpen(!sidebar.classList.contains('sidebar--open'));
       }

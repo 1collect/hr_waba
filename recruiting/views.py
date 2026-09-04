@@ -5,11 +5,14 @@ import re
 from datetime import datetime, timezone as datetime_timezone
 
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
@@ -27,8 +30,36 @@ STATUS_VARIANTS = {
     Candidate.Status.HIRED: 'success',
 }
 
+staff_required = user_passes_test(
+    lambda user: user.is_active and user.is_staff,
+    login_url='/login/',
+)
 
-@staff_member_required(login_url='/admin/login/')
+
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def login_page(request):
+    next_url = request.POST.get('next') or request.GET.get('next') or '/candidates/'
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        next_url = '/candidates/'
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect(next_url)
+
+    error = None
+    if request.method == 'POST':
+        user = authenticate(
+            request,
+            username=request.POST.get('username', ''),
+            password=request.POST.get('password', ''),
+        )
+        if user and user.is_active and user.is_staff:
+            login(request, user)
+            return redirect(next_url)
+        error = 'Неверный логин или пароль'
+    return render(request, 'recruiting/login.html', {'error': error, 'next': next_url})
+
+
+@staff_required
 def candidates_page(request):
     return render(request, 'recruiting/candidates.html')
 
@@ -54,7 +85,7 @@ def _candidate_summary(candidate):
     }
 
 
-@staff_member_required(login_url='/admin/login/')
+@staff_required
 @require_GET
 def candidate_list_api(request):
     candidates = Candidate.objects.select_related('current_question').prefetch_related(
@@ -72,7 +103,7 @@ def candidate_list_api(request):
     return JsonResponse({'results': rows, 'count': len(rows)})
 
 
-@staff_member_required(login_url='/admin/login/')
+@staff_required
 @require_GET
 def candidate_detail_api(request, candidate_id):
     candidate = get_object_or_404(

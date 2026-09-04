@@ -5,19 +5,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f7f8">
-  <meta name="description" content="Кандидаты WhatsApp-бота TalentFlow">
-  <title>TalentFlow — Кандидаты</title>
+  <meta name="description" content="Кандидаты WhatsApp-бота">
+  <title>Кандидаты</title>
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/reset.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/utilities.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/components.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/layout.css' %}">
-  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/candidates.css' %}">
   <script src="{% static 'hr-tech-dashboard/js/components.js' %}" defer></script>
   <script src="{% static 'hr-tech-dashboard/js/candidates.js' %}" defer></script>
 </head>
-<body data-page="candidates">
+<body data-page="candidates" data-user-name="{{ request.user.get_full_name|default:request.user.username }}">
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <div class="app" id="app">
     <aside class="sidebar" id="sidebar" aria-label="Боковая панель"></aside>

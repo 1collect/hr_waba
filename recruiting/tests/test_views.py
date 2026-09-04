@@ -36,7 +36,33 @@ class CandidateViewsTests(TestCase):
             reverse('recruiting:candidate-list-api'),
             reverse('recruiting:candidate-detail-api', args=[self.candidate.id]),
         ):
-            self.assertEqual(self.client.get(url).status_code, 302)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 302)
+            self.assertTrue(response.url.startswith('/login/'))
+
+    def test_custom_login_accepts_staff_user(self):
+        response = self.client.post(reverse('recruiting:login'), {
+            'username': 'recruiter', 'password': 'secret', 'next': '/candidates/'
+        })
+        self.assertRedirects(response, '/candidates/', fetch_redirect_response=False)
+
+    def test_custom_login_rejects_external_redirect(self):
+        response = self.client.post(reverse('recruiting:login'), {
+            'username': 'recruiter', 'password': 'secret', 'next': 'https://example.com/'
+        })
+        self.assertRedirects(response, '/candidates/', fetch_redirect_response=False)
+
+    def test_root_uses_application_route_and_admin_is_disabled(self):
+        self.assertRedirects(self.client.get('/'), '/candidates/', fetch_redirect_response=False)
+        self.assertEqual(self.client.get('/admin/').status_code, 404)
+
+    def test_custom_login_does_not_allow_non_staff_user(self):
+        get_user_model().objects.create_user('candidate-user', password='secret')
+        response = self.client.post(reverse('recruiting:login'), {
+            'username': 'candidate-user', 'password': 'secret'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Неверный логин или пароль')
 
     def test_authenticated_recruiter_can_read_candidates(self):
         self.client.force_login(self.user)

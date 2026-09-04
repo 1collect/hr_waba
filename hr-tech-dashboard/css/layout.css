@@ -21,58 +21,12 @@
   padding: var(--space-4) var(--space-3);
 }
 
-.sidebar__logo {
-  display: flex;
-  min-height: 52px;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 0 var(--space-3);
-  color: var(--color-text);
-}
-
-.sidebar__logo-mark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  place-items: center;
-  color: var(--color-surface);
-  background: var(--color-primary);
-  border-radius: var(--radius-lg);
-}
-
-.sidebar__logo-mark .icon {
-  width: 20px;
-  height: 20px;
-}
-
-.sidebar__logo-text {
-  min-width: 0;
-}
-
-.sidebar__logo-name {
-  display: block;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.015em;
-}
-
-.sidebar__logo-caption {
-  display: block;
-  margin-top: 1px;
-  color: var(--color-text-secondary);
-  font-size: 0.625rem;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .sidebar__nav {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   gap: var(--space-1);
-  margin-top: var(--space-6);
+  margin-top: 0;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -335,12 +289,6 @@
     padding-left: var(--space-2);
   }
 
-  .sidebar__logo {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .sidebar__logo-text,
   .sidebar__label,
   .sidebar__counter,
   .sidebar__profile-meta,

@@ -1,4 +1,4 @@
-# TalentFlow recruiting bot
+# Recruiting WhatsApp bot
 
 Рекрутинговый бот на Django и SQLite. Анкетирование не зависит от транспорта:
 сейчас сообщения можно вводить в терминале, а подготовленный адаптер Meta WhatsApp
@@ -13,8 +13,8 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
-Панель кандидатов: `http://127.0.0.1:8000/candidates/`. Она защищена входом
-через Django Admin. Существующий dashboard открывается по корневому URL.
+Панель кандидатов: `http://127.0.0.1:8000/`. Вход выполняется через собственную
+страницу приложения.
 
 Терминальный бот запускается отдельно:
 

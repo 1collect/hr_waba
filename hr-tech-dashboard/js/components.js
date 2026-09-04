@@ -1208,33 +1208,16 @@
 
   function createSidebar(options = {}) {
     const {
-      activePage = 'dashboard',
-      user = { name: 'Анна Воронова', role: 'HR lead' },
+      activePage = 'candidates',
+      user = { name: 'Пользователь', role: 'Сотрудник' },
       items: customItems,
       onNavigate,
       onProfile
     } = options;
     const items = customItems || [
-      { page: 'dashboard', label: 'Главная', icon: 'home', href: '/' },
-      { page: 'vacancies', label: 'Вакансии', icon: 'briefcase', href: '#vacancies' },
-      { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' },
-      { page: 'responses', label: 'Отклики', icon: 'inbox', href: '#responses', counter: '12' },
-      { page: 'analytics', label: 'Аналитика', icon: 'chart', href: '/static/hr-tech-dashboard/analytics.html' },
-      { page: 'calendar', label: 'Календарь', icon: 'calendar', href: '#calendar' },
-      { page: 'messages', label: 'Сообщения', icon: 'message', href: '#messages', counter: '5' },
-      { page: 'settings', label: 'Настройки', icon: 'settings', href: '#settings' }
+      { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' }
     ];
     const inner = createElement('div', 'sidebar__inner');
-    const logo = createElement('a', 'sidebar__logo', { href: '/', ariaLabel: 'TalentFlow — на главную' });
-    const logoMark = createElement('span', 'sidebar__logo-mark', { 'aria-hidden': 'true' });
-    logoMark.append(createIcon('spark', { size: 20 }));
-    const logoText = createElement('span', 'sidebar__logo-text');
-    logoText.append(
-      createElement('span', 'sidebar__logo-name', { text: 'TalentFlow' }),
-      createElement('span', 'sidebar__logo-caption', { text: 'HR workspace' })
-    );
-    logo.append(logoMark, logoText);
-
     const nav = createElement('nav', 'sidebar__nav', { ariaLabel: 'Основные разделы' });
     items.forEach((item) => {
       const isActive = item.page === activePage;
@@ -1257,9 +1240,9 @@
     });
 
     const footer = createElement('div', 'sidebar__footer');
-    const profile = createElement('button', 'sidebar__profile', {
-      type: 'button',
-      ariaLabel: 'Открыть профиль пользователя'
+    const profile = createElement(typeof onProfile === 'function' ? 'button' : 'div', 'sidebar__profile', {
+      type: typeof onProfile === 'function' ? 'button' : null,
+      ariaLabel: typeof onProfile === 'function' ? 'Открыть профиль пользователя' : null
     });
     profile.append(createAvatar({ name: user.name, size: 'md', status: true }));
     const meta = createElement('span', 'sidebar__profile-meta');
@@ -1267,23 +1250,25 @@
       createElement('span', 'sidebar__profile-name', { text: user.name }),
       createElement('span', 'sidebar__profile-role', { text: user.role })
     );
-    profile.append(meta, createIcon('chevronRight', { size: 16 }));
+    profile.append(meta);
     if (typeof onProfile === 'function') {
+      profile.append(createIcon('chevronRight', { size: 16 }));
       profile.addEventListener('click', onProfile);
     }
     footer.append(profile);
-    inner.append(logo, nav, footer);
+    inner.append(nav, footer);
     return inner;
   }
 
   function createTopbar(options = {}) {
     const {
       title = 'Рабочая панель',
-      context = 'TalentFlow',
-      user = { name: 'Анна Воронова' },
+      context = '',
+      user = { name: 'Пользователь' },
       periodOptions = [],
       periodValue,
       onPeriodChange,
+      showNotifications = true,
       onMenuClick,
       onNotifications,
       onProfile
@@ -1317,23 +1302,25 @@
       });
       right.append(periodDropdown);
     }
-    right.append(createIconButton({
-      icon: 'bell',
-      label: 'Уведомления',
-      indicator: true,
-      onClick: onNotifications
-    }));
-    right.append(createElement('span', 'topbar__divider', { 'aria-hidden': 'true' }));
-    const profile = createElement('button', 'topbar__profile', {
-      type: 'button',
-      ariaLabel: 'Открыть меню профиля'
+    if (showNotifications) {
+      right.append(createIconButton({
+        icon: 'bell',
+        label: 'Уведомления',
+        indicator: true,
+        onClick: onNotifications
+      }));
+      right.append(createElement('span', 'topbar__divider', { 'aria-hidden': 'true' }));
+    }
+    const profile = createElement(typeof onProfile === 'function' ? 'button' : 'div', 'topbar__profile', {
+      type: typeof onProfile === 'function' ? 'button' : null,
+      ariaLabel: typeof onProfile === 'function' ? 'Открыть меню профиля' : null
     });
     profile.append(
       createAvatar({ name: user.name, size: 'sm', status: true }),
-      createElement('span', 'topbar__profile-name', { text: user.name }),
-      createIcon('chevronDown', { size: 15 })
+      createElement('span', 'topbar__profile-name', { text: user.name })
     );
     if (typeof onProfile === 'function') {
+      profile.append(createIcon('chevronDown', { size: 15 }));
       profile.addEventListener('click', onProfile);
     }
     right.append(profile);
