@@ -1,0 +1,42 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f8">
+  <meta name="description" content="Кандидаты WhatsApp-бота TalentFlow">
+  <title>TalentFlow — Кандидаты</title>
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/reset.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/utilities.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/layout.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/candidates.css' %}">
+  <script src="{% static 'hr-tech-dashboard/js/components.js' %}" defer></script>
+  <script src="{% static 'hr-tech-dashboard/js/candidates.js' %}" defer></script>
+</head>
+<body data-page="candidates">
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Боковая панель"></aside>
+    <div class="main">
+      <header class="topbar" id="topbar"></header>
+      <main class="page" id="main-content">
+        <div class="page-header" id="page-header"></div>
+        <div class="page-content candidates-page">
+          <section class="card candidates-card">
+            <div class="candidates-toolbar">
+              <div id="candidate-search"></div>
+              <div class="candidate-filters" id="candidate-filters"></div>
+            </div>
+            <div id="candidates-table" aria-live="polite"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div id="app-overlays"></div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+.candidates-page { display: block; }
+.candidates-card { overflow: hidden; }
+.candidates-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
+.candidates-toolbar #candidate-search { width: min(100%, 300px); flex: 0 0 auto; }
+.candidate-filters { min-width: 0; }
+.candidate-filters .tabs { background: transparent; }
+.candidates-table .table__cell { padding-top: var(--space-3); padding-bottom: var(--space-3); }
+.candidates-table tbody tr[data-row-key] { cursor: pointer; }
+.candidates-table tbody tr[data-row-key]:hover,
+.candidates-table tbody tr[data-row-key]:focus-visible { background: var(--color-primary-soft); outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.candidate-cell { display: flex; align-items: center; gap: var(--space-3); }
+.candidate-cell__name, .candidate-cell__id { display: block; }
+.candidate-cell__name { font-weight: var(--font-weight-semibold); }
+.candidate-cell__id { margin-top: 2px; color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.candidate-modal { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.candidate-modal .modal__body { overflow-y: auto; }
+.candidate-detail { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr); gap: var(--space-5); }
+.candidate-detail__actions { display: flex; align-items: center; gap: var(--space-3); }
+.candidate-detail__heading { margin-bottom: var(--space-3); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
+.candidate-detail__empty { color: var(--color-text-secondary); }
+.candidate-detail__answers { min-width: 0; }
+.answers-list { display: grid; gap: var(--space-2); }
+.answers-list__item { padding: var(--space-3); background: var(--color-surface-muted); border-radius: var(--radius-md); }
+.answers-list__question { color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.answers-list__answer { margin-top: var(--space-1); font-weight: var(--font-weight-medium); }
+.conversation { display: flex; height: min(44vh, 420px); flex-direction: column; gap: var(--space-3); overflow-y: auto; padding: var(--space-4); background: var(--color-surface-muted); border-radius: var(--radius-lg); }
+.message-bubble { max-width: min(82%, 520px); padding: var(--space-3) var(--space-4); background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.message-bubble--outgoing { align-self: flex-end; background: var(--color-primary-soft); }
+.message-bubble__text { white-space: pre-wrap; }
+.message-bubble__time { display: block; margin-top: var(--space-1); color: var(--color-text-secondary); font-size: 0.6875rem; text-align: right; }
+.typing-indicator { display: flex; align-self: flex-start; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); color: var(--color-text-secondary); background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); font-size: var(--font-size-xs); }
+.typing-indicator__dots { display: flex; gap: 3px; }
+.typing-indicator__dots i { width: 5px; height: 5px; background: currentColor; border-radius: 50%; animation: typing-dot 1.1s infinite ease-in-out; }
+.typing-indicator__dots i:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator__dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-dot { 0%, 60%, 100% { opacity: 0.35; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+
+@media (max-width: 760px) {
+  .candidates-toolbar { align-items: stretch; flex-direction: column; }
+  .candidates-toolbar #candidate-search { width: 100%; }
+  .candidate-filters { margin-right: calc(var(--space-1) * -1); margin-left: calc(var(--space-1) * -1); }
+  .candidate-detail { grid-template-columns: 1fr; }
+  .candidate-detail__messages { order: 2; }
+  .candidate-detail__answers { order: 1; }
+  .conversation { height: 420px; }
+  .candidates-table th:nth-child(n + 3),
+  .candidates-table td:nth-child(n + 3) { display: none; }
+  .candidates-table .table { min-width: 0; }
+  .candidates-table .table__cell:first-child { padding-left: var(--space-4); }
+  .candidates-table .table__cell:nth-child(2) { padding-right: var(--space-4); }
+}
