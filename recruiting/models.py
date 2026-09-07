@@ -22,6 +22,7 @@ class Candidate(models.Model):
     survey_started_at = models.DateTimeField('анкета начата', null=True, blank=True)
     survey_completed_at = models.DateTimeField('анкета завершена', null=True, blank=True)
     typing_until = models.DateTimeField('печатает до', null=True, blank=True)
+    question_needs_prompt = models.BooleanField(default=False)
     created_at = models.DateTimeField('создан', auto_now_add=True)
     updated_at = models.DateTimeField('обновлён', auto_now=True)
 
@@ -35,7 +36,18 @@ class Candidate(models.Model):
 
 
 class Question(models.Model):
+    class AnswerType(models.TextChoices):
+        TEXT = 'text', 'Текст'
+        NUMBER = 'number', 'Число'
+        YES_NO = 'yes_no', 'Да / Нет'
+
     text = models.TextField('текст вопроса')
+    answer_type = models.CharField('тип ответа', max_length=16, choices=AnswerType.choices, default=AnswerType.TEXT)
+    show_if_question = models.ForeignKey(
+        'self', verbose_name='показывать после вопроса', null=True, blank=True,
+        on_delete=models.PROTECT, related_name='conditional_questions',
+    )
+    show_if_answer = models.CharField('если ответ', max_length=3, blank=True, choices=(('Да', 'Да'), ('Нет', 'Нет')))
     key = models.SlugField('ключ', max_length=64, unique=True)
     position = models.PositiveIntegerField('порядок', unique=True)
     is_active = models.BooleanField('активен', default=True)

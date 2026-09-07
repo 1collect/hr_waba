@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from recruiting.models import Answer, Candidate, Message, Question
-from recruiting.services import BotService, COMPLETION_MESSAGE, IncomingMessage
+from recruiting.services import BotService, COMPLETION_MESSAGE, GREETING, IncomingMessage
 from recruiting.transports.base import MessageTransport, SendResult
 
 
@@ -37,7 +37,9 @@ class BotServiceTests(TestCase):
         self.assertEqual(candidate.status, Candidate.Status.SURVEY_IN_PROGRESS)
         self.assertEqual(candidate.current_question, self.questions[0])
         self.assertEqual(candidate.answers.count(), 0)
-        self.assertEqual(self.transport.sent, [('77001234567', 'Ваше имя?')])
+        self.assertEqual(self.transport.sent[0][0], '77001234567')
+        self.assertIn(GREETING, self.transport.sent[0][1])
+        self.assertTrue(self.transport.sent[0][1].endswith('Ваше имя?'))
         self.assertEqual(candidate.messages.count(), 2)
 
     def test_answers_are_saved_one_at_a_time_then_survey_completes(self):

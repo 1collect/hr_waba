@@ -30,13 +30,24 @@ class WhatsAppTransport(MessageTransport):
         )
 
     def send_message(self, recipient_id: str, text: str) -> SendResult:
+        return self._send(recipient_id, {'type': 'text', 'text': {'preview_url': False, 'body': text}})
+
+    def send_buttons(self, recipient_id: str, text: str, buttons: list) -> SendResult:
+        return self._send(recipient_id, {
+            'type': 'interactive',
+            'interactive': {
+                'type': 'button', 'body': {'text': text},
+                'action': {'buttons': [{'type': 'reply', 'reply': button} for button in buttons]},
+            },
+        })
+
+    def _send(self, recipient_id, content) -> SendResult:
         url = f'{self.api_base_url}/{self.api_version}/{self.phone_number_id}/messages'
         payload = json.dumps({
             'messaging_product': 'whatsapp',
             'recipient_type': 'individual',
             'to': recipient_id,
-            'type': 'text',
-            'text': {'preview_url': False, 'body': text},
+            **content,
         }).encode('utf-8')
         http_request = request.Request(
             url,

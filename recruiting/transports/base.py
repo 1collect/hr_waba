@@ -13,6 +13,9 @@ class SendResult:
 class MessageTransport(ABC):
     name: str
 
+    def send_buttons(self, recipient_id: str, text: str, buttons: list) -> SendResult:
+        return self.send_message(recipient_id, text + '\n' + ' / '.join(button['title'] for button in buttons))
+
     @abstractmethod
     def send_message(self, recipient_id: str, text: str) -> SendResult:
         raise NotImplementedError
