@@ -11,10 +11,11 @@
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/components.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/layout.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/questions.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/builder.css' %}">
   <script src="{% static 'hr-tech-dashboard/js/components.js' %}" defer></script>
-  <script src="{% static 'hr-tech-dashboard/js/questions.js' %}" defer></script>
+  <script src="{% static 'hr-tech-dashboard/js/builder.js' %}" defer></script>
 </head>
-<body data-user-name="{{ request.user.get_full_name|default:request.user.username }}">
+<body class="builder-page" data-user-name="{{ request.user.get_full_name|default:request.user.username }}">
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <div class="app">
     <aside class="sidebar" id="sidebar" aria-label="Навигация">
@@ -23,6 +24,10 @@
     <div class="main">
       <header class="topbar" id="topbar"></header>
       <main class="page questions-page" id="main-content">
+        {{ builder_data|json_script:'builder-data' }}
+        {{ greeting|json_script:'builder-greeting' }}
+        {% include 'recruiting/builder.html' %}
+        <div id="legacy-editor">
         <header class="page-header">
           <div class="questions-heading"><h1 class="page-header__title">Конструктор анкеты</h1><span class="questions-count">{{ rows|length }}</span></div>
           <a class="btn btn--primary" href="#new-question" id="add-question">+ Добавить вопрос</a>
@@ -75,6 +80,7 @@
             <div class="question-form__footer"><label class="question-toggle">{{ form.is_active }} Включён</label><button type="submit" class="btn btn--primary btn--sm">Добавить</button></div>
           </form>
         </details>
+        </div>
       </main>
     </div>
   </div>

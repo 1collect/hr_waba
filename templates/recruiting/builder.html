@@ -1,0 +1,31 @@
+<div class="flow-builder" id="flow-builder" hidden>
+  <header class="builder-header">
+    <div class="builder-title"><span class="builder-logo" aria-hidden="true">⌘</span><div><div class="builder-eyebrow">RECRUITING / АВТОМАТИЗАЦИЯ</div><h1>Конструктор анкеты <span class="builder-version">FLOW</span></h1></div></div>
+    <div class="builder-header-actions"><span id="save-status" role="status">Все изменения сохранены</span><button class="btn btn--secondary" id="test-flow" type="button">▷ Пройти анкету</button><button class="btn btn--primary" id="save-flow" type="button">Сохранить сценарий</button></div>
+  </header>
+  <div class="builder-draft" id="draft-banner" hidden><span>В этом браузере есть несохранённый черновик.</span><button type="button" id="restore-draft">Восстановить</button><button type="button" id="discard-draft">Убрать</button></div>
+  <div class="builder-alert" id="builder-alert" role="alert" hidden></div>
+  <div class="builder-workspace">
+    <aside class="block-library" aria-label="Библиотека блоков">
+      <div class="panel-eyebrow">СОБЕРИТЕ СВОЙ СЦЕНАРИЙ</div><h2>Блоки</h2><p class="panel-description">Добавьте вопрос на схему</p>
+      <div id="block-types" class="block-types"></div>
+      <div class="outline-heading"><h3>Сценарий</h3><span id="block-count"></span></div>
+      <label class="sr-only" for="block-search">Найти вопрос</label><input id="block-search" class="input" placeholder="Найти вопрос…" type="search">
+      <div id="flow-outline" class="flow-outline"></div>
+      <button type="button" class="archive-toggle" id="archive-toggle">Показать выключенные</button>
+      <div class="library-tip"><span>✦</span><p>У каждого «Да / Нет» можно добавить свою ветку уточняющих вопросов.</p></div>
+    </aside>
+    <section class="flow-canvas-panel" aria-label="Схема анкеты">
+      <div class="canvas-toolbar"><span class="canvas-title"><i></i> Анкета кандидата</span><div class="canvas-tools"><button type="button" id="undo-flow" title="Отменить (Ctrl+Z)" aria-label="Отменить">↶</button><button type="button" id="redo-flow" title="Повторить (Ctrl+Shift+Z)" aria-label="Повторить">↷</button><span class="tool-divider"></span><button type="button" id="zoom-out" aria-label="Уменьшить">−</button><button type="button" id="zoom-reset" title="Сбросить масштаб">100%</button><button type="button" id="zoom-in" aria-label="Увеличить">+</button></div></div>
+      <div class="canvas-viewport" id="canvas-viewport" tabindex="0" aria-label="Полотно сценария, прокрутите для просмотра">
+        <div class="flow-stage" id="flow-stage"><svg id="flow-connections" aria-hidden="true"></svg><div id="flow-nodes" class="flow-nodes"></div></div>
+      </div>
+      <footer class="canvas-footer"><span><i class="legend-dot"></i> По очереди <i class="legend-dot legend-dot--branch"></i> По условию</span><span>Перетащите блок, чтобы изменить порядок</span></footer>
+    </section>
+    <aside class="flow-inspector" aria-label="Настройки и проверка">
+      <div class="inspector-tabs" role="tablist" aria-label="Панель блока"><button type="button" role="tab" id="settings-tab" aria-selected="true" aria-controls="settings-panel">Настройки</button><button type="button" role="tab" id="preview-tab" aria-selected="false" aria-controls="preview-panel">Проверка <span class="live-dot"></span></button></div>
+      <section id="settings-panel" role="tabpanel" aria-labelledby="settings-tab"><div id="node-inspector"></div></section>
+      <section id="preview-panel" role="tabpanel" aria-labelledby="preview-tab" hidden><div class="preview-heading"><div><h2>Как это увидит кандидат</h2><p>Проверка текущего черновика</p></div><button type="button" id="restart-preview" title="Начать заново" aria-label="Начать заново">↻</button></div><div class="phone-preview"><div class="phone-top"><span class="bot-avatar">HR</span><div><strong>Помощник по найму</strong><small>онлайн</small></div><span class="phone-secure">⌑</span></div><div class="phone-chat" id="phone-chat" aria-live="polite"></div><div class="phone-compose" id="phone-compose"></div></div><p class="preview-note">Пробные ответы видны только вам. Нажмите на ответ, чтобы исправить его.</p></section>
+    </aside>
+  </div>
+</div>

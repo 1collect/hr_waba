@@ -23,6 +23,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from .models import Answer, Candidate, Question
 from .forms import QuestionForm
+from .builder import snapshot, save_scenario, BuilderConflict
 from .services import BotService, IncomingMessage, GREETING, normalize_answer, reconcile_answers
 from .transports import get_transport
 
@@ -148,7 +149,23 @@ def questions_page(request):
             'show_if_question': q.show_if_question_id, 'show_if_answer': q.show_if_answer,
         } for q in questions if q.is_active],
         'greeting': GREETING,
+        'builder_data': snapshot(questions),
     })
+
+
+@staff_required
+@require_http_methods(['GET', 'POST'])
+def question_builder_api(request):
+    if request.method == 'GET':
+        return JsonResponse(snapshot())
+    try:
+        return JsonResponse(save_scenario(json.loads(request.body)))
+    except BuilderConflict as exc:
+        return JsonResponse({'error': str(exc)}, status=409)
+    except (ValueError, UnicodeDecodeError) as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+    except IntegrityError:
+        return JsonResponse({'error': 'Анкета изменилась во время сохранения. Обновите страницу.'}, status=409)
 
 
 def _candidate_summary(candidate):
