@@ -1,4 +1,19 @@
 .questions-page { max-width: 1100px; }
+.question-help { color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
+.question-settings { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; }
+.question-settings > div { min-width: 0; }
+.question-settings .input { width: 100%; }
+.question-order { display: flex; gap: 8px; padding: 0 24px 20px; }
+.question-preview { padding: 20px 24px; margin-bottom: 20px; }
+.question-preview > summary { cursor: pointer; font-weight: 600; }
+.question-preview[open] > summary { margin-bottom: 16px; }
+#question-preview { display: grid; gap: 16px; margin-top: 20px; max-width: 650px; }
+.preview-current { display: grid; gap: 12px; padding: 20px; background: var(--color-surface-muted); border-radius: 12px; }
+.preview-current h3 { font-size: 15px; }
+.preview-buttons { display: flex; gap: 12px; }
+.preview-answer { display: grid; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border); }
+.preview-answer .btn, #question-preview > .btn { justify-self: start; }
+@media (max-width: 700px) { .question-settings { grid-template-columns: 1fr; } }
 .questions-heading { display: flex; align-items: center; gap: 12px; }
 .questions-count { padding: 3px 10px; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-secondary); font-size: 14px; background: white; }
 .question-list { overflow: hidden; }

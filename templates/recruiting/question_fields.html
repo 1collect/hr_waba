@@ -1,0 +1,6 @@
+<div class="question-settings">
+  <div><label class="field__label" for="{{ form.answer_type.id_for_label }}">Тип ответа</label>{{ form.answer_type }}{{ form.answer_type.errors }}</div>
+  <div><label class="field__label" for="{{ form.show_if_question.id_for_label }}">Условие показа</label>{{ form.show_if_question }}{{ form.show_if_question.errors }}</div>
+  <div><label class="field__label" for="{{ form.show_if_answer.id_for_label }}">Если ответ</label>{{ form.show_if_answer }}{{ form.show_if_answer.errors }}</div>
+</div>
+<p class="question-help">«Да / Нет» — две кнопки в WhatsApp. При условии вопрос появится только после выбранного ответа.</p>

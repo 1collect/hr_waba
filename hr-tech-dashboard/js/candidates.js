@@ -146,8 +146,8 @@
           render: (row) => UI.badge({ label: shortStatus(row), variant: row.status_variant })
         },
         {
-          key: 'desired_position', label: 'Позиция',
-          render: (row) => row.primary_answers.desired_position || '—'
+          key: 'last_workplace', label: 'Последнее место работы',
+          render: (row) => row.primary_answers.last_workplace || '—'
         },
         {
           key: 'progress', label: 'Ответы', sortable: false,
@@ -160,9 +160,9 @@
     document.getElementById('candidates-table').replaceChildren(table);
   }
 
-  function renderAnswers(answers) {
+  function renderAnswers(answers, candidateId) {
     const labels = {
-      full_name: 'Имя',
+      full_name: 'ФИО',
       city: 'Город',
       desired_position: 'Позиция',
       experience: 'Опыт',
@@ -181,6 +181,59 @@
         UI.element('dt', 'answers-list__question', { text: labels[item.question_key] || item.question }),
         UI.element('dd', 'answers-list__answer', { text: item.answer })
       );
+      const edit = UI.button({ label: 'Изменить', variant: 'secondary', size: 'sm', onClick() {
+        const opened = state.openCandidate;
+        if (!opened || opened.editing) return;
+        opened.editing = true;
+        const form = UI.element('form', 'answer-editor');
+        const input = UI.element(item.answer_type === 'yes_no' ? 'select' : 'textarea', 'input', {
+          'aria-label': item.question, required: true
+        });
+        if (item.answer_type === 'yes_no') {
+          ['Да', 'Нет'].forEach(value => input.append(UI.element('option', '', { value, text: value })));
+        }
+        input.value = item.answer;
+        const errorText = UI.element('p', '', { role: 'alert' });
+        const save = UI.element('button', 'btn btn--primary btn--sm', { type: 'submit', text: 'Сохранить' });
+        const cancel = UI.button({ label: 'Отмена', variant: 'secondary', size: 'sm', onClick() {
+          opened.editing = false;
+          form.remove();
+          edit.hidden = false;
+          refreshOpenCandidate(candidateId);
+        } });
+        form.append(input, errorText, save, cancel);
+        form.append(UI.element('p', 'candidate-detail__empty', {
+          text: 'После изменения ответа анкета пересчитывается. Ответы на вопросы, условие которых больше не выполнено, будут удалены.'
+        }));
+        form.addEventListener('submit', async event => {
+          event.preventDefault();
+          save.disabled = true;
+          cancel.disabled = true;
+          try {
+            const csrf = document.cookie.split('; ').find(value => value.startsWith('csrftoken='))?.split('=')[1] || '';
+            const response = await fetch(`/api/candidates/${candidateId}/answers/${item.id}/`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': decodeURIComponent(csrf) },
+              body: JSON.stringify({ answer: input.value })
+            });
+            if (!response.ok) {
+              const data = await response.json().catch(() => ({}));
+              throw new Error(data.error || 'Не удалось сохранить ответ');
+            }
+            opened.editing = false;
+            await refreshOpenCandidate(candidateId);
+            await loadCandidates();
+          } catch (error) {
+            errorText.textContent = error.message;
+          } finally {
+            save.disabled = false;
+            cancel.disabled = false;
+          }
+        });
+        edit.hidden = true;
+        pair.append(form);
+        input.focus();
+      } });
+      pair.append(edit);
       list.append(pair);
     });
     section.append(list);
@@ -223,7 +276,7 @@
     const content = UI.element('div', 'candidate-detail');
     content.append(
       renderConversation(candidate.messages, typing),
-      renderAnswers(candidate.answers)
+      renderAnswers(candidate.answers, candidate.id)
     );
     return content;
   }
@@ -236,9 +289,9 @@
 
   async function refreshOpenCandidate(id) {
     const opened = state.openCandidate;
-    if (!opened || opened.id !== id) return;
+    if (!opened || opened.id !== id || opened.editing) return;
     const response = await fetch(`/api/candidates/${id}/`, { headers: { Accept: 'application/json' } });
-    if (!response.ok || state.openCandidate !== opened) return;
+    if (!response.ok || state.openCandidate !== opened || opened.editing) return;
     opened.candidate = await response.json();
     opened.modal.setContent(buildCandidateContent(opened.candidate, opened.typing));
   }
@@ -264,7 +317,7 @@
         const opened = state.openCandidate;
         if (opened?.id === message.candidate_id && opened.typing !== message.typing) {
           opened.typing = message.typing;
-          opened.modal.setContent(buildCandidateContent(opened.candidate, opened.typing));
+          if (!opened.editing) opened.modal.setContent(buildCandidateContent(opened.candidate, opened.typing));
         }
       } else if (message.type === 'candidate.removed') {
         if (state.openCandidate?.id === message.candidate_id) state.openCandidate.modal.close();

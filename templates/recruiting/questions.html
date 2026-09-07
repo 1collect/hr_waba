@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Вопросы</title>
+  <title>Конструктор анкеты — Recruiting</title>
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/reset.css' %}">
   <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/utilities.css' %}">
@@ -24,16 +24,24 @@
       <header class="topbar" id="topbar"></header>
       <main class="page questions-page" id="main-content">
         <header class="page-header">
-          <div class="questions-heading"><h1 class="page-header__title">Вопросы</h1><span class="questions-count">{{ rows|length }}</span></div>
+          <div class="questions-heading"><h1 class="page-header__title">Конструктор анкеты</h1><span class="questions-count">{{ rows|length }}</span></div>
           <a class="btn btn--primary" href="#new-question" id="add-question">+ Добавить вопрос</a>
         </header>
         {% for message in messages %}<p class="question-notice" role="status">{{ message }}</p>{% endfor %}
+        <p class="question-help">Бот задаёт по одному вопросу и ждёт ответ. Настройте текст, тип ответа и условие показа. Вопрос с условием должен стоять после выбранного вопроса «Да / Нет».</p>
+        <details class="card question-preview">
+          <summary>▷ Проверить анкету</summary>
+          <p class="question-help">Проверка сохранённых настроек. Пробные ответы не сохраняются в карточках кандидатов.</p>
+          <p>{{ greeting }}</p>
+          <div id="question-preview"></div>
+        </details>
+        {{ preview_questions|json_script:'preview-questions' }}
         <section class="card question-list" aria-label="Вопросы анкеты">
           <div class="question-list__header"><h2>Анкета кандидата</h2><span>Включено: {{ active_count }}</span></div>
           {% for row in rows %}
           <details class="question-row" {% if row.open %}open{% endif %}>
             <summary>
-              <span class="question-number">{{ forloop.counter|stringformat:'02d' }}</span>
+              <span class="question-number">{{ row.question.position|stringformat:'02d' }}</span>
               <span class="question-text">{{ row.question.text }}</span>
               <span class="badge {% if row.question.is_active %}badge--success{% else %}badge--neutral{% endif %}">{% if row.question.is_active %}Включён{% else %}Выключен{% endif %}</span>
               <span class="question-chevron" aria-hidden="true">⌄</span>
@@ -45,7 +53,13 @@
               {{ row.form.non_field_errors }}
               <label for="{{ row.form.text.id_for_label }}" class="field__label">Вопрос</label>
               {{ row.form.text }}{{ row.form.text.errors }}
+              {% include 'recruiting/question_fields.html' with form=row.form %}
               <div class="question-form__footer"><label class="question-toggle">{{ row.form.is_active }} Включён</label><button type="submit" class="btn btn--primary btn--sm">Сохранить</button></div>
+            </form>
+            <form method="post" class="question-order">{% csrf_token %}
+              <input type="hidden" name="question_id" value="{{ row.question.pk }}">
+              <button class="btn btn--secondary btn--sm" name="action" value="up" {% if forloop.first %}disabled{% endif %}>↑ Выше</button>
+              <button class="btn btn--secondary btn--sm" name="action" value="down" {% if forloop.last %}disabled{% endif %}>↓ Ниже</button>
             </form>
           </details>
           {% empty %}<div class="questions-empty">Вопросов пока нет</div>{% endfor %}
@@ -57,6 +71,7 @@
             {{ form.non_field_errors }}
             <label for="{{ form.text.id_for_label }}" class="field__label">Вопрос</label>
             {{ form.text }}{{ form.text.errors }}
+            {% include 'recruiting/question_fields.html' %}
             <div class="question-form__footer"><label class="question-toggle">{{ form.is_active }} Включён</label><button type="submit" class="btn btn--primary btn--sm">Добавить</button></div>
           </form>
         </details>

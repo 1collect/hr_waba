@@ -15,13 +15,15 @@ from django.db.models import Max, Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 
-from .models import Candidate, Question
+from .models import Answer, Candidate, Question
 from .forms import QuestionForm
-from .services import BotService, IncomingMessage
+from .services import BotService, IncomingMessage, GREETING, normalize_answer, reconcile_answers
 from .transports import get_transport
 
 
@@ -64,6 +66,7 @@ def login_page(request):
 
 
 @staff_required
+@ensure_csrf_cookie
 def candidates_page(request):
     return render(request, 'recruiting/candidates.html')
 
@@ -76,7 +79,31 @@ def questions_page(request):
     edit_form = None
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'edit':
+        if action in ('up', 'down'):
+            try:
+                question_id = int(request.POST.get('question_id', ''))
+                if not 0 < question_id <= 9223372036854775807:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return HttpResponseBadRequest('Invalid question ID')
+            with transaction.atomic():
+                ordered = list(Question.objects.select_for_update().all())
+                index = next((i for i, q in enumerate(ordered) if q.pk == question_id), None)
+                if index is None:
+                    return HttpResponseBadRequest('Invalid question ID')
+                target = index + (-1 if action == 'up' else 1)
+                if 0 <= target < len(ordered):
+                    first, second = ordered[index], ordered[target]
+                    positions = {q.pk: q.position for q in ordered}
+                    positions[first.pk], positions[second.pk] = second.position, first.position
+                    if any(q.show_if_question_id and positions[q.show_if_question_id] >= positions[q.pk] for q in ordered):
+                        messages.error(request, 'Вопрос с условием должен идти после вопроса, от которого зависит.')
+                    else:
+                        Question.objects.filter(pk=first.pk).update(position=max(positions.values()) + 1)
+                        Question.objects.filter(pk=second.pk).update(position=positions[second.pk])
+                        Question.objects.filter(pk=first.pk).update(position=positions[first.pk])
+            return redirect('recruiting:questions')
+        elif action == 'edit':
             try:
                 question_id = int(request.POST.get('question_id', ''))
             except (TypeError, ValueError):
@@ -116,6 +143,11 @@ def questions_page(request):
     return render(request, 'recruiting/questions.html', {
         'rows': rows, 'form': form,
         'active_count': sum(question.is_active for question in questions),
+        'preview_questions': [{
+            'id': q.pk, 'text': q.text, 'answer_type': q.answer_type,
+            'show_if_question': q.show_if_question_id, 'show_if_answer': q.show_if_answer,
+        } for q in questions if q.is_active],
+        'greeting': GREETING,
     })
 
 
@@ -170,6 +202,8 @@ def candidate_detail_api(request, candidate_id):
     data = _candidate_summary(candidate)
     data['answers'] = [
         {
+            'id': answer.id,
+            'answer_type': answer.question.answer_type,
             'question': answer.question.text,
             'question_key': answer.question.key,
             'position': answer.question.position,
@@ -189,6 +223,37 @@ def candidate_detail_api(request, candidate_id):
         for message in candidate.messages.all()
     ]
     return JsonResponse(data)
+
+
+@staff_required
+@require_http_methods(['POST'])
+@transaction.atomic
+def candidate_answer_api(request, candidate_id, answer_id):
+    candidate = get_object_or_404(Candidate.objects.select_for_update(), pk=candidate_id)
+    answer = get_object_or_404(Answer.objects.select_related('question'), candidate=candidate, pk=answer_id)
+    try:
+        payload = json.loads(request.body)
+        if not isinstance(payload, dict) or not isinstance(payload.get('answer'), str):
+            raise ValueError('Передайте текст ответа.')
+        text = normalize_answer(answer.question, payload['answer'])
+    except (ValueError, UnicodeDecodeError) as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+    answer.text = text
+    answer.save(update_fields=['text'])
+    next_question = reconcile_answers(candidate)
+    if candidate.status in (Candidate.Status.SURVEY_IN_PROGRESS, Candidate.Status.SURVEY_COMPLETED):
+        if next_question:
+            candidate.question_needs_prompt = candidate.question_needs_prompt or candidate.current_question_id != next_question.pk
+            candidate.current_question = next_question
+            candidate.status = Candidate.Status.SURVEY_IN_PROGRESS
+            candidate.survey_completed_at = None
+        else:
+            candidate.current_question = None
+            candidate.question_needs_prompt = False
+            candidate.status = Candidate.Status.SURVEY_COMPLETED
+            candidate.survey_completed_at = candidate.survey_completed_at or timezone.now()
+    candidate.save()
+    return JsonResponse({'status': 'ok'})
 
 
 def _signature_is_valid(request):
