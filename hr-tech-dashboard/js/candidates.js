@@ -26,7 +26,8 @@
       activePage: 'candidates',
       user: { name: userName, role: 'Сотрудник' },
       items: [
-        { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' }
+        { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' },
+        { page: 'questions', label: 'Вопросы', icon: 'file', href: '/questions/' }
       ]
     }));
     const topbarContent = UI.topbar({

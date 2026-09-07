@@ -1,0 +1,68 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вопросы</title>
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/reset.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/utilities.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/layout.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/questions.css' %}">
+  <script src="{% static 'hr-tech-dashboard/js/components.js' %}" defer></script>
+  <script src="{% static 'hr-tech-dashboard/js/questions.js' %}" defer></script>
+</head>
+<body data-user-name="{{ request.user.get_full_name|default:request.user.username }}">
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Навигация">
+      <nav><a href="{% url 'recruiting:candidates' %}">Кандидаты</a> <a href="{% url 'recruiting:questions' %}" aria-current="page">Вопросы</a></nav>
+    </aside>
+    <div class="main">
+      <header class="topbar" id="topbar"></header>
+      <main class="page questions-page" id="main-content">
+        <header class="page-header">
+          <div class="questions-heading"><h1 class="page-header__title">Вопросы</h1><span class="questions-count">{{ rows|length }}</span></div>
+          <a class="btn btn--primary" href="#new-question" id="add-question">+ Добавить вопрос</a>
+        </header>
+        {% for message in messages %}<p class="question-notice" role="status">{{ message }}</p>{% endfor %}
+        <section class="card question-list" aria-label="Вопросы анкеты">
+          <div class="question-list__header"><h2>Анкета кандидата</h2><span>Включено: {{ active_count }}</span></div>
+          {% for row in rows %}
+          <details class="question-row" {% if row.open %}open{% endif %}>
+            <summary>
+              <span class="question-number">{{ forloop.counter|stringformat:'02d' }}</span>
+              <span class="question-text">{{ row.question.text }}</span>
+              <span class="badge {% if row.question.is_active %}badge--success{% else %}badge--neutral{% endif %}">{% if row.question.is_active %}Включён{% else %}Выключен{% endif %}</span>
+              <span class="question-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <form method="post" class="question-form">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="edit">
+              <input type="hidden" name="question_id" value="{{ row.question.pk }}">
+              {{ row.form.non_field_errors }}
+              <label for="{{ row.form.text.id_for_label }}" class="field__label">Вопрос</label>
+              {{ row.form.text }}{{ row.form.text.errors }}
+              <div class="question-form__footer"><label class="question-toggle">{{ row.form.is_active }} Включён</label><button type="submit" class="btn btn--primary btn--sm">Сохранить</button></div>
+            </form>
+          </details>
+          {% empty %}<div class="questions-empty">Вопросов пока нет</div>{% endfor %}
+        </section>
+        <details class="card question-create" id="new-question" {% if form.is_bound %}open{% endif %}>
+          <summary>+ Новый вопрос</summary>
+          <form method="post" class="question-form">
+            {% csrf_token %}<input type="hidden" name="action" value="add">
+            {{ form.non_field_errors }}
+            <label for="{{ form.text.id_for_label }}" class="field__label">Вопрос</label>
+            {{ form.text }}{{ form.text.errors }}
+            <div class="question-form__footer"><label class="question-toggle">{{ form.is_active }} Включён</label><button type="submit" class="btn btn--primary btn--sm">Добавить</button></div>
+          </form>
+        </details>
+      </main>
+    </div>
+  </div>
+  <div id="app-overlays"></div>
+</body>
+</html>

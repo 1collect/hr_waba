@@ -1,0 +1,37 @@
+.questions-page { max-width: 1100px; }
+.questions-heading { display: flex; align-items: center; gap: 12px; }
+.questions-count { padding: 3px 10px; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-secondary); font-size: 14px; background: white; }
+.question-list { overflow: hidden; }
+.question-list__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; }
+.question-list__header h2 { font-size: 14px; font-weight: 600; }
+.question-list__header > span { color: var(--color-text-secondary); font-size: 12px; }
+.question-row { border-top: 1px solid var(--color-border); }
+.question-row summary { display: flex; align-items: center; gap: 18px; padding: 24px; cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+.question-row summary:hover { background: #fafafb; }
+.question-number { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 10px; background: var(--color-surface-muted); color: var(--color-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.question-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; white-space: pre-line; }
+.question-chevron { color: var(--color-text-secondary); transition: transform 140ms ease; }
+.question-row[open] .question-chevron { transform: rotate(180deg); }
+.question-row[open] { background: #fafafb; }
+.question-form { display: grid; gap: 10px; padding: 0 24px 24px; }
+.question-form textarea { width: 100%; min-height: 100px; resize: vertical; line-height: 1.6; }
+.question-form__footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 6px; }
+.question-toggle { display: flex; align-items: center; gap: 9px; font-size: 13px; cursor: pointer; }
+.question-toggle input { width: 17px; height: 17px; accent-color: var(--color-primary); }
+.question-create { margin-top: 20px; border-style: dashed; box-shadow: none; }
+.question-create > summary { padding: 20px 24px; cursor: pointer; color: var(--color-text-secondary); font-size: 14px; font-weight: 500; list-style: none; }
+.question-create[open] > summary { color: var(--color-text); }
+.question-notice { margin-bottom: 16px; padding: 12px 16px; background: var(--color-success-soft); color: var(--color-success); border-radius: 10px; font-size: 14px; }
+.questions-empty { padding: 40px 24px; color: var(--color-text-secondary); text-align: center; }
+.errorlist { color: var(--color-danger); font-size: 13px; list-style: none; }
+summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -3px; border-radius: 6px; }
+@media (max-width: 600px) {
+  .question-row summary { gap: 12px; padding: 18px 16px; flex-wrap: wrap; }
+  .question-text { flex-basis: calc(100% - 48px); }
+  .question-row .badge { margin-left: 48px; }
+  .question-chevron { margin-left: auto; }
+  .question-form { padding: 0 16px 18px; }
+  .question-list__header { padding: 18px 16px; }
+  .question-create > summary { padding: 18px 16px; }
+}

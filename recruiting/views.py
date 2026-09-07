@@ -2,13 +2,16 @@ import hashlib
 import hmac
 import json
 import re
+from uuid import uuid4
 from datetime import datetime, timezone as datetime_timezone
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q
+from django.db import IntegrityError, transaction
+from django.db.models import Max, Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -16,7 +19,8 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
-from .models import Candidate
+from .models import Candidate, Question
+from .forms import QuestionForm
 from .services import BotService, IncomingMessage
 from .transports import get_transport
 
@@ -62,6 +66,57 @@ def login_page(request):
 @staff_required
 def candidates_page(request):
     return render(request, 'recruiting/candidates.html')
+
+
+@staff_required
+@require_http_methods(['GET', 'POST'])
+def questions_page(request):
+    editing = None
+    form = QuestionForm(prefix='new')
+    edit_form = None
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'edit':
+            try:
+                question_id = int(request.POST.get('question_id', ''))
+            except (TypeError, ValueError):
+                return HttpResponseBadRequest('Invalid question ID')
+            if not 0 < question_id <= 9223372036854775807:
+                return HttpResponseBadRequest('Invalid question ID')
+            editing = get_object_or_404(Question, pk=question_id)
+            edit_form = QuestionForm(request.POST, instance=editing, prefix=f'q-{editing.pk}')
+            if edit_form.is_valid():
+                edit_form.save()
+                messages.success(request, 'Вопрос сохранён')
+                return redirect('recruiting:questions')
+        elif action == 'add':
+            form = QuestionForm(request.POST, prefix='new')
+            if form.is_valid():
+                try:
+                    with transaction.atomic():
+                        question = form.save(commit=False)
+                        question.key = f'question_{uuid4().hex}'
+                        question.position = (Question.objects.aggregate(last=Max('position'))['last'] or 0) + 1
+                        question.save()
+                except IntegrityError:
+                    form.add_error(None, 'Список изменился. Повторите сохранение.')
+                else:
+                    messages.success(request, 'Вопрос добавлен')
+                    return redirect('recruiting:questions')
+        else:
+            return HttpResponseBadRequest('Unknown action')
+    questions = list(Question.objects.all())
+    rows = [{
+        'question': question,
+        'form': edit_form if editing and editing.pk == question.pk else QuestionForm(
+            instance=question, prefix=f'q-{question.pk}'
+        ),
+        'open': bool(editing and editing.pk == question.pk),
+    } for question in questions]
+    return render(request, 'recruiting/questions.html', {
+        'rows': rows, 'form': form,
+        'active_count': sum(question.is_active for question in questions),
+    })
 
 
 def _candidate_summary(candidate):
