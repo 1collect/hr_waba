@@ -85,6 +85,8 @@
   }
   function select(id, scroll = false) {
     state.selected = id; renderOutline(); renderCanvas(); renderInspector();
+    setInspector(true);
+    setLibrary(false);
     if (scroll) requestAnimationFrame(() => document.querySelector(`[data-node-id="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }));
   }
   function add(answerType, parent = null, answer = '') {
@@ -96,7 +98,7 @@
       answer_type: answerType, is_active: true, show_if_question: parent, show_if_answer: answer };
     const index = state.rows.findIndex(row => row.id === (parent || state.selected));
     state.rows.splice(index < 0 ? state.rows.length : index + 1, 0, q);
-    state.selected = id; alert(); changed(); switchTab('settings');
+    state.selected = id; alert(); changed(); switchTab('settings'); setLibrary(false);
     requestAnimationFrame(() => { $('question-text')?.focus(); $('question-text')?.select(); });
   }
   function move(id, targetId) {
@@ -244,6 +246,7 @@
     panel.append(actions); const error = validate(state.rows); if (error) panel.append(el('p', 'inspector-error', { text: error }));
   }
   function switchTab(tab) {
+    setInspector(true);
     state.tab = tab;
     ['settings', 'preview'].forEach(name => { $(`${name}-tab`).setAttribute('aria-selected', String(name === tab)); $(`${name}-tab`).tabIndex = name === tab ? 0 : -1; $(`${name}-panel`).hidden = name !== tab; });
     if (tab === 'preview') renderPreview();
@@ -325,6 +328,25 @@
   } catch { /* A malformed draft must not prevent opening the editor. */ }
   $('restore-draft').addEventListener('click', () => { checkpoint(); state.rows = copy(state.draft); state.selected = state.rows.find(q => q.is_active)?.id; $('draft-banner').hidden = true; changed(); });
   $('discard-draft').addEventListener('click', () => { try { localStorage.removeItem(storageKey); } catch {} $('draft-banner').hidden = true; });
+  function setLibrary(open) {
+    $('block-library').hidden = !open;
+    $('toggle-library').setAttribute('aria-expanded', String(open));
+  }
+  function setInspector(open) {
+    $('flow-inspector').hidden = !open;
+    $('flow-builder').classList.toggle('inspector-closed', !open);
+    $('toggle-inspector').setAttribute('aria-expanded', String(open));
+    requestAnimationFrame(drawConnections);
+  }
+  $('toggle-library').addEventListener('click', () => setLibrary($('block-library').hidden));
+  $('quick-add-question').addEventListener('click', () => add('text'));
+  $('toggle-inspector').addEventListener('click', () => setInspector($('flow-inspector').hidden));
+  $('close-inspector').addEventListener('click', () => { setInspector(false); $('toggle-inspector').focus(); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { setLibrary(false); if (window.innerWidth <= 800) setInspector(false); }
+  });
   $('legacy-editor').hidden = true; $('flow-builder').hidden = false;
+  document.body.classList.add('builder-ready');
+  if (window.innerWidth <= 800) setInspector(false);
   updateStatus(); renderOutline(); renderCanvas(); renderInspector();
 })();

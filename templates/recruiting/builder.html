@@ -1,12 +1,13 @@
 <div class="flow-builder" id="flow-builder" hidden>
   <header class="builder-header">
-    <div class="builder-title"><span class="builder-logo" aria-hidden="true">⌘</span><div><div class="builder-eyebrow">RECRUITING / АВТОМАТИЗАЦИЯ</div><h1>Конструктор анкеты <span class="builder-version">FLOW</span></h1></div></div>
+    <div class="builder-title"><a class="builder-back" href="{% url 'recruiting:candidates' %}" aria-label="К кандидатам" title="К кандидатам">←</a><div><h1>Конструктор анкеты</h1><p class="builder-subtitle">Выберите вопрос на схеме, чтобы изменить его</p></div></div>
     <div class="builder-header-actions"><span id="save-status" role="status">Все изменения сохранены</span><button class="btn btn--secondary" id="test-flow" type="button">▷ Пройти анкету</button><button class="btn btn--primary" id="save-flow" type="button">Сохранить сценарий</button></div>
   </header>
   <div class="builder-draft" id="draft-banner" hidden><span>В этом браузере есть несохранённый черновик.</span><button type="button" id="restore-draft">Восстановить</button><button type="button" id="discard-draft">Убрать</button></div>
   <div class="builder-alert" id="builder-alert" role="alert" hidden></div>
   <div class="builder-workspace">
-    <aside class="block-library" aria-label="Библиотека блоков">
+    <div class="workspace-actions"><button type="button" id="toggle-library" aria-expanded="false" aria-controls="block-library">☰ Вопросы и блоки</button><button type="button" id="quick-add-question">+ Добавить вопрос</button><button type="button" id="toggle-inspector" aria-expanded="true" aria-controls="flow-inspector">Настройки вопроса</button></div>
+    <aside class="block-library" id="block-library" aria-label="Библиотека блоков" hidden>
       <div class="panel-eyebrow">СОБЕРИТЕ СВОЙ СЦЕНАРИЙ</div><h2>Блоки</h2><p class="panel-description">Добавьте вопрос на схему</p>
       <div id="block-types" class="block-types"></div>
       <div class="outline-heading"><h3>Сценарий</h3><span id="block-count"></span></div>
@@ -22,7 +23,8 @@
       </div>
       <footer class="canvas-footer"><span><i class="legend-dot"></i> По очереди <i class="legend-dot legend-dot--branch"></i> По условию</span><span>Перетащите блок, чтобы изменить порядок</span></footer>
     </section>
-    <aside class="flow-inspector" aria-label="Настройки и проверка">
+    <aside class="flow-inspector" id="flow-inspector" aria-label="Настройки и проверка">
+      <button type="button" id="close-inspector" aria-label="Закрыть настройки">×</button>
       <div class="inspector-tabs" role="tablist" aria-label="Панель блока"><button type="button" role="tab" id="settings-tab" aria-selected="true" aria-controls="settings-panel">Настройки</button><button type="button" role="tab" id="preview-tab" aria-selected="false" aria-controls="preview-panel">Проверка <span class="live-dot"></span></button></div>
       <section id="settings-panel" role="tabpanel" aria-labelledby="settings-tab"><div id="node-inspector"></div></section>
       <section id="preview-panel" role="tabpanel" aria-labelledby="preview-tab" hidden><div class="preview-heading"><div><h2>Как это увидит кандидат</h2><p>Проверка текущего черновика</p></div><button type="button" id="restart-preview" title="Начать заново" aria-label="Начать заново">↻</button></div><div class="phone-preview"><div class="phone-top"><span class="bot-avatar">HR</span><div><strong>Помощник по найму</strong><small>онлайн</small></div><span class="phone-secure">⌑</span></div><div class="phone-chat" id="phone-chat" aria-live="polite"></div><div class="phone-compose" id="phone-compose"></div></div><p class="preview-note">Пробные ответы видны только вам. Нажмите на ответ, чтобы исправить его.</p></section>
