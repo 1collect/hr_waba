@@ -1,19 +1,20 @@
 <div class="flow-builder" id="flow-builder" hidden>
   <header class="builder-header">
-    <div class="builder-title"><a class="builder-back" href="{% url 'recruiting:candidates' %}" aria-label="К кандидатам" title="К кандидатам">←</a><div><h1>Анкета кандидата</h1></div></div>
-    <div class="builder-header-actions"><span id="save-status" role="status">Все изменения сохранены</span><button class="btn btn--secondary" id="test-flow" type="button">Проверить анкету</button><button class="btn btn--primary" id="save-flow" type="button">Сохранить</button></div>
+    <div class="builder-title"><a class="builder-back" href="{% url 'recruiting:candidates' %}" aria-label="К кандидатам" title="К кандидатам">←</a><div><h1>Конструктор анкеты</h1><p class="builder-subtitle">Выберите вопрос на схеме, чтобы изменить его</p></div></div>
+    <div class="builder-header-actions"><span id="save-status" role="status">Все изменения сохранены</span><button class="btn btn--secondary" id="test-flow" type="button">▷ Пройти анкету</button><button class="btn btn--primary" id="save-flow" type="button">Сохранить сценарий</button></div>
   </header>
   <div class="builder-draft" id="draft-banner" hidden><span>В этом браузере есть несохранённый черновик.</span><button type="button" id="restore-draft">Восстановить</button><button type="button" id="discard-draft">Убрать</button></div>
   <div class="builder-alert" id="builder-alert" role="alert" hidden></div>
   <div class="builder-workspace">
     <div class="workspace-actions"><button type="button" id="toggle-library" aria-expanded="false" aria-controls="block-library">☰ Вопросы и блоки</button><button type="button" id="quick-add-question">+ Добавить вопрос</button><button type="button" id="toggle-inspector" aria-expanded="true" aria-controls="flow-inspector">Настройки вопроса</button></div>
     <aside class="block-library" id="block-library" aria-label="Библиотека блоков" hidden>
-      <h2>Добавить вопрос</h2>
+      <div class="panel-eyebrow">СОБЕРИТЕ СВОЙ СЦЕНАРИЙ</div><h2>Блоки</h2><p class="panel-description">Добавьте вопрос на схему</p>
       <div id="block-types" class="block-types"></div>
       <div class="outline-heading"><h3>Сценарий</h3><span id="block-count"></span></div>
       <label class="sr-only" for="block-search">Найти вопрос</label><input id="block-search" class="input" placeholder="Найти вопрос…" type="search">
       <div id="flow-outline" class="flow-outline"></div>
       <button type="button" class="archive-toggle" id="archive-toggle">Показать выключенные</button>
+      <div class="library-tip"><span>✦</span><p>У каждого «Да / Нет» можно добавить свою ветку уточняющих вопросов.</p></div>
     </aside>
     <section class="flow-canvas-panel" aria-label="Схема анкеты">
       <div class="canvas-toolbar"><span class="canvas-title"><i></i> Анкета кандидата</span><div class="canvas-tools"><button type="button" id="undo-flow" title="Отменить (Ctrl+Z)" aria-label="Отменить">↶</button><button type="button" id="redo-flow" title="Повторить (Ctrl+Shift+Z)" aria-label="Повторить">↷</button><span class="tool-divider"></span><button type="button" id="zoom-out" aria-label="Уменьшить">−</button><button type="button" id="zoom-reset" title="Сбросить масштаб">100%</button><button type="button" id="zoom-in" aria-label="Увеличить">+</button></div></div>

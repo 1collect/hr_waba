@@ -66,10 +66,3 @@ class WhatsAppTransport(MessageTransport):
             raise RuntimeError(f'WhatsApp API вернул HTTP {exc.code}: {details}') from exc
         message_id = (data.get('messages') or [{}])[0].get('id')
         return SendResult(external_message_id=message_id, sent_at=timezone.now(), metadata=data)
-
-
-class WhatsAppTestTransport(WhatsAppTransport):
-    """WhatsApp transport that allows completed surveys to start over."""
-
-    name = 'whatsapp_test'
-    restart_completed_surveys = True

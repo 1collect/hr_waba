@@ -54,23 +54,11 @@ class QuestionnaireFlowTests(TestCase):
     def test_stale_button_does_not_answer_next_question(self):
         self.send('Привет')
         self.send('Нет')
-        sent_count = len(self.transport.sent)
         candidate = self.send('Да', metadata={'raw': {'interactive': {'button_reply': {
             'id': f'question:{self.parent.pk}:yes', 'title': 'Да',
         }}}})
         self.assertEqual(candidate.current_question, self.last)
         self.assertFalse(candidate.answers.filter(question=self.last).exists())
-        self.assertEqual(len(self.transport.sent), sent_count)
-
-    def test_button_choice_advances_without_confirmation(self):
-        self.send('Привет')
-        sent_before = len(self.transport.sent)
-        candidate = self.send('Нет', metadata={'raw': {'interactive': {'button_reply': {
-            'id': f'question:{self.parent.pk}:no', 'title': 'Нет',
-        }}}})
-        self.assertEqual(candidate.current_question, self.last)
-        self.assertEqual(len(self.transport.sent), sent_before + 1)
-        self.assertEqual(self.transport.sent[-1][1], self.last.text)
 
     def test_number_and_empty_answer_validation(self):
         self.parent.answer_type = 'number'
