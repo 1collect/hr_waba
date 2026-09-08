@@ -354,7 +354,7 @@ def whatsapp_webhook(request):
 
     if not _signature_is_valid(request):
         return HttpResponseForbidden('Invalid signature or WHATSAPP_APP_SECRET is not configured')
-    if settings.BOT_TRANSPORT != 'whatsapp':
+    if settings.BOT_TRANSPORT not in ('whatsapp', 'whatsapp_test'):
         return HttpResponse('WhatsApp transport is disabled', status=503)
     try:
         payload = json.loads(request.body)

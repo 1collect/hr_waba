@@ -27,7 +27,7 @@
       user: { name: userName, role: 'Сотрудник' },
       items: [
         { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' },
-        { page: 'questions', label: 'Вопросы', icon: 'file', href: '/questions/' }
+        { page: 'questions', label: 'Анкета', icon: 'file', href: '/questions/' }
       ]
     }));
     const topbarContent = UI.topbar({
@@ -77,7 +77,6 @@
       ['rejected', 'Отклонены']
     ];
     const items = definitions
-      .filter(([id]) => id === 'all' || counts[id] || id === state.status)
       .map(([id, label]) => ({
         id,
         label: `${label} ${id === 'all' ? state.allCandidates.length : (counts[id] || 0)}`
@@ -91,7 +90,21 @@
         applyFilters();
       }
     });
-    document.getElementById('candidate-filters').replaceChildren(tabs);
+    const target = document.getElementById('candidate-filters');
+    const focusedId = target.contains(document.activeElement) ? document.activeElement.dataset.tabId : null;
+    const scrollLeft = target.firstChild?.scrollLeft || 0;
+    target.replaceChildren(tabs);
+    tabs.scrollLeft = scrollLeft;
+    if (focusedId) tabs.querySelector(`[data-tab-id="${focusedId}"]`)?.focus({ preventScroll: true });
+  }
+
+  function resetFilters() {
+    state.query = '';
+    state.status = 'all';
+    refs.search.input.value = '';
+    renderFilters();
+    applyFilters();
+    refs.search.input.focus();
   }
 
   function applyFilters() {
@@ -105,8 +118,13 @@
         candidate.external_id,
         ...Object.values(candidate.primary_answers)
       ].join(' ').toLocaleLowerCase('ru-RU');
-      return searchable.includes(query);
+      const phoneQuery = query.replace(/\D/g, '');
+      const phoneMatch = /^[+\d\s()-]+$/.test(query) && phoneQuery.length > 0
+        && candidate.external_id.replace(/\D/g, '').includes(phoneQuery);
+      return searchable.includes(query) || phoneMatch;
     });
+    document.getElementById('candidate-count').textContent = `Показано: ${state.candidates.length} из ${state.allCandidates.length}`;
+    document.getElementById('reset-filters').hidden = !state.query && state.status === 'all';
     renderTable();
   }
 
@@ -134,6 +152,22 @@
   }
 
   function renderTable() {
+    const target = document.getElementById('candidates-table');
+    if (!state.candidates.length) {
+      const filtered = Boolean(state.query || state.status !== 'all');
+      target.replaceChildren(UI.emptyState({
+        title: filtered ? 'Ничего не найдено' : 'Кандидатов пока нет',
+        description: filtered ? 'Попробуйте другое имя, номер или статус.' : 'Новые кандидаты появятся здесь после обращения к боту.',
+        icon: filtered ? 'search' : 'users',
+        action: filtered ? UI.button({ label: 'Сбросить фильтры', variant: 'secondary', onClick: resetFilters }) : undefined
+      }));
+      return;
+    }
+    if (refs.table) {
+      refs.table.updateRows(state.candidates);
+      if (target.firstChild !== refs.table) target.replaceChildren(refs.table);
+      return;
+    }
     const table = UI.table({
       caption: 'Кандидаты',
       emptyMessage: 'Кандидаты не найдены',
@@ -147,16 +181,20 @@
         },
         {
           key: 'last_workplace', label: 'Последнее место работы',
+          sortValue: (row) => row.primary_answers.last_workplace || '',
           render: (row) => row.primary_answers.last_workplace || '—'
         },
         {
           key: 'progress', label: 'Ответы', sortable: false,
           render: (row) => String(row.answers_count)
         },
-        { key: 'updated_at', label: 'Активность', render: (row) => formatDate(row.updated_at) }
+        { key: 'updated_at', label: 'Активность', sortValue: (row) => new Date(row.updated_at).getTime(), render: (row) => formatDate(row.updated_at) },
+        { key: 'open', label: '', sortable: false, render: () => UI.icon('chevronRight', { size: 18 }) }
       ]
     });
     table.classList.add('candidates-table');
+    table.setSort('updated_at', 'desc');
+    refs.table = table;
     document.getElementById('candidates-table').replaceChildren(table);
   }
 
@@ -181,7 +219,7 @@
         UI.element('dt', 'answers-list__question', { text: labels[item.question_key] || item.question }),
         UI.element('dd', 'answers-list__answer', { text: item.answer })
       );
-      const edit = UI.button({ label: 'Изменить', variant: 'secondary', size: 'sm', onClick() {
+      const edit = UI.button({ label: 'Изменить', variant: 'ghost', size: 'sm', onClick() {
         const opened = state.openCandidate;
         if (!opened || opened.editing) return;
         opened.editing = true;
@@ -274,7 +312,11 @@
 
   function buildCandidateContent(candidate, typing = false) {
     const content = UI.element('div', 'candidate-detail');
+    const summary = UI.element('div', 'candidate-detail__summary');
+    summary.append(UI.badge({ label: shortStatus(candidate), variant: candidate.status_variant }),
+      UI.element('span', '', { text: `Ответов: ${candidate.answers.length}` }));
     content.append(
+      summary,
       renderConversation(candidate.messages, typing),
       renderAnswers(candidate.answers, candidate.id)
     );
@@ -373,6 +415,7 @@
   async function loadCandidates() {
     const target = document.getElementById('candidates-table');
     target.setAttribute('aria-busy', 'true');
+    if (!target.hasChildNodes()) target.append(UI.element('p', 'candidates-loading', { role: 'status', text: 'Загрузка кандидатов…' }));
     try {
       const response = await fetch('/api/candidates/', { headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error('Не удалось загрузить кандидатов');
@@ -393,15 +436,18 @@
   function init() {
     renderShell();
     document.getElementById('page-header').replaceChildren(UI.pageHeader({
-      title: 'Кандидаты'
+      title: 'Кандидаты',
+      actions: UI.element('a', 'btn btn--secondary', { href: '/questions/', text: 'Настроить анкету' })
     }));
     const search = UI.searchInput({
-      placeholder: 'Поиск',
+      placeholder: 'Имя, телефон или ответ',
       onInput(value) {
         state.query = value.trim();
         applyFilters();
       }
     });
+    refs.search = search;
+    document.getElementById('reset-filters').addEventListener('click', resetFilters);
     document.getElementById('candidate-search').append(search);
     loadCandidates();
     connectRealtime();

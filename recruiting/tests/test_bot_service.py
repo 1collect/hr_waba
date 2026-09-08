@@ -17,6 +17,11 @@ class RecordingTransport(MessageTransport):
         return SendResult()
 
 
+class RepeatingRecordingTransport(RecordingTransport):
+    name = 'whatsapp_test'
+    restart_completed_surveys = True
+
+
 class BotServiceTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -77,3 +82,48 @@ class BotServiceTests(TestCase):
         self.service.handle(IncomingMessage(sender_id='77001234567', text='Иван'))
         candidate.refresh_from_db()
         self.assertIsNone(candidate.typing_until)
+
+    def test_whatsapp_test_can_repeat_completed_survey(self):
+        service = BotService(RepeatingRecordingTransport())
+        service.handle(IncomingMessage(sender_id='77001234567', text='Start'))
+        service.handle(IncomingMessage(sender_id='77001234567', text='First name'))
+        candidate = service.handle(IncomingMessage(sender_id='77001234567', text='First city'))
+        self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
+
+        candidate = service.handle(IncomingMessage(sender_id='77001234567', text='Again'))
+        candidate.refresh_from_db()
+        self.assertEqual(candidate.status, Candidate.Status.SURVEY_IN_PROGRESS)
+        self.assertEqual(candidate.current_question, self.questions[0])
+        self.assertEqual(candidate.answers.count(), 0)
+        self.assertIsNone(candidate.survey_completed_at)
+
+        service.handle(IncomingMessage(sender_id='77001234567', text='Second name'))
+        candidate = service.handle(IncomingMessage(sender_id='77001234567', text='Second city'))
+        self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
+        self.assertEqual(
+            list(candidate.answers.values_list('text', flat=True)),
+            ['Second name', 'Second city'],
+        )
+        self.assertEqual(Candidate.objects.filter(external_id='77001234567').count(), 1)
+
+    def test_whatsapp_test_ignores_old_button_after_completion(self):
+        transport = RepeatingRecordingTransport()
+        service = BotService(transport)
+        service.handle(IncomingMessage(sender_id='77001234567', text='Start'))
+        service.handle(IncomingMessage(sender_id='77001234567', text='First name'))
+        candidate = service.handle(IncomingMessage(sender_id='77001234567', text='First city'))
+        sent_count = len(transport.sent)
+
+        candidate = service.handle(IncomingMessage(
+            sender_id='77001234567',
+            text='Yes',
+            metadata={'raw': {'interactive': {'button_reply': {
+                'id': f'question:{self.questions[0].pk}:yes',
+                'title': 'Yes',
+            }}}},
+        ))
+
+        candidate.refresh_from_db()
+        self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
+        self.assertEqual(candidate.answers.count(), 2)
+        self.assertEqual(len(transport.sent), sent_count)
