@@ -100,6 +100,31 @@ class BotService:
         candidate.typing_until = None
         candidate.updated_at = now
 
+        selection = (incoming.metadata or {}).get('raw', {}).get('interactive', {}).get(
+            'button_reply', {}
+        )
+        button_id = selection.get('id', '')
+
+        # A delayed button click must neither change an answer nor start a new
+        # test-mode survey after the previous one has completed.
+        if (
+            button_id.startswith('question:')
+            and candidate.status == Candidate.Status.SURVEY_COMPLETED
+        ):
+            return candidate
+
+        if (
+            getattr(self.transport, 'restart_completed_surveys', False)
+            and candidate.status == Candidate.Status.SURVEY_COMPLETED
+        ):
+            candidate.answers.all().delete()
+            candidate.status = Candidate.Status.NEW
+            candidate.current_question = None
+            candidate.survey_started_at = None
+            candidate.survey_completed_at = None
+            candidate.question_needs_prompt = False
+            candidate.save()
+
         if created or candidate.status == Candidate.Status.NEW:
             first_question = next(iter(eligible_questions(candidate)), None)
             if not first_question:
@@ -150,12 +175,9 @@ class BotService:
             self._advance(candidate, timestamp)
             return candidate
         # A delayed click on an earlier question must not answer the current one.
-        selection = (incoming.metadata or {}).get('raw', {}).get('interactive', {}).get('button_reply', {})
-        button_id = selection.get('id', '')
         if button_id.startswith('question:') and button_id not in (
             f'question:{current_question.pk}:yes', f'question:{current_question.pk}:no',
         ):
-            self._send_question(candidate, current_question)
             return candidate
         try:
             answer_text = normalize_answer(current_question, incoming.text)

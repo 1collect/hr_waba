@@ -59,6 +59,8 @@ Copy-Item .env.example .env
 `BOT_TRANSPORT=whatsapp` и зарегистрируйте публичный callback
 `https://your-domain.example/webhooks/whatsapp/` в Meta. GET используется для
 проверки verify token, POST проверяет подпись `X-Hub-Signature-256` через App Secret.
+Для многократного тестового прохождения с одного WhatsApp-номера используйте
+`BOT_TRANSPORT=whatsapp_test`: следующее сообщение после завершения очищает ответы и запускает анкету заново.
 
 Основная логика находится в `recruiting/services.py`, а транспортные адаптеры —
 в `recruiting/transports/`. Поэтому переключение транспорта не меняет анкету,

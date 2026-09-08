@@ -1,0 +1,43 @@
+.builder-ready { overflow: auto; }
+.builder-ready .main, .builder-ready .questions-page { height: auto; min-height: 100dvh; }
+.flow-builder { min-height: 100dvh; height: auto; background: var(--color-bg); }
+.builder-header { position: sticky; top: 0; z-index: 10; background: #fff; padding: 16px 24px; }
+.builder-workspace, .inspector-closed .builder-workspace { display: block; min-height: 0; }
+.workspace-actions, .canvas-footer, .canvas-title, #zoom-out, #zoom-in, #zoom-reset, .tool-divider, #flow-connections { display: none; }
+.flow-canvas-panel { overflow: visible; background: transparent; }
+.canvas-toolbar { max-width: 820px; margin: 0 auto; width: 100%; padding: 16px 20px 0; background: transparent; border: 0; }
+.canvas-tools { justify-content: flex-start; }
+.canvas-tools button { width: auto; padding: 0 14px; font-size: 14px; }
+.canvas-viewport { overflow: visible; background: none; }
+.flow-stage { min-width: 0; }
+.flow-nodes { display: flex; align-items: stretch; gap: 14px; max-width: 820px; margin: 0 auto; padding: 16px 20px 48px; }
+.simple-question { background: #fff; border: 1px solid var(--color-border-strong); border-radius: 12px; overflow: hidden; }
+.simple-question:has(#inline-inspector) { border-color: #a99bd7; }
+.simple-question-heading { width: 100%; display: flex; align-items: center; gap: 12px; padding: 18px; text-align: left; background: transparent; }
+.simple-question-heading:hover { background: #f9f8fc; }
+.simple-question-number { display: grid; place-items: center; flex: 0 0 32px; height: 32px; border-radius: 8px; background: #f2eff9; color: #66538e; font-size: 14px; }
+.simple-question-title { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.simple-question-type { color: #696373; font-size: 12px; }
+.simple-question--off .simple-question-number { background: #eee; color: #666; }
+.simple-condition { padding: 0 18px 14px 62px; font-size: 13px; color: #66538e; }
+#inline-inspector { padding: 8px 20px 20px; }
+#inline-inspector .inspector-field textarea { min-height: 100px; }
+#inline-inspector .inspector-section { margin: 16px 0; padding-top: 16px; }
+#inline-inspector summary { cursor: pointer; min-height: 36px; font-size: 14px; font-weight: 600; }
+#inline-inspector .inspector-toggle { margin: 12px 0; }
+#inline-inspector .text-counter { display: none; }
+.canvas-add { margin: 0; min-height: 48px; color: #63518d; background: #fff; }
+.flow-inspector { position: fixed; inset: 96px 20px 20px auto; width: min(440px, calc(100% - 40px)); max-height: none; z-index: 20; border: 1px solid #d5cbe7; border-radius: 14px; box-shadow: 0 10px 50px #30244830; }
+.inspector-tabs { display: none; }
+.preview-heading { padding-right: 58px; }
+.builder-alert, .builder-draft { position: sticky; top: 88px; z-index: 11; }
+@media (max-width: 600px) {
+  .builder-header { padding: 12px; }
+  .builder-title h1 { font-size: 20px; }
+  .flow-nodes { padding: 12px 12px 32px; }
+  .simple-question-heading { padding: 14px; gap: 10px; flex-wrap: wrap; }
+  .simple-question-type { margin-left: 42px; flex-basis: 100%; }
+  #inline-inspector { padding: 0 14px 14px; }
+  .flow-inspector { inset: 180px 8px 8px; width: auto; }
+  .builder-alert, .builder-draft { position: static; }
+}
