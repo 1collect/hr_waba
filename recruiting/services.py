@@ -208,7 +208,7 @@ class BotService:
     def _send_question(self, candidate, question, greeting=False):
         text = question.text
         if greeting:
-            text = GREETING + '\n\n' + EDIT_HELP + '\n\n' + text
+            text = GREETING + '\n\n' + text
         buttons = []
         if question.answer_type == Question.AnswerType.YES_NO:
             buttons = [

@@ -225,16 +225,17 @@
       const show = q.is_active && (!q.show_if_question || (seen.has(q.show_if_question) && state.answers.get(q.show_if_question) === q.show_if_answer));
       if (show) seen.add(q.id); else state.answers.delete(q.id); return show;
     });
-    chat.append(el('span', 'chat-date', { text: 'СЕГОДНЯ' }), el('div', 'chat-bubble chat-bubble--bot', { text: greeting }));
+    const questionText = q => q.id === eligible[0]?.id ? `${greeting}\n\n${q.text}` : q.text;
+    chat.append(el('span', 'chat-date', { text: 'СЕГОДНЯ' }));
     eligible.filter(q => state.answers.has(q.id)).forEach(q => {
-      chat.append(el('div', 'chat-bubble chat-bubble--bot', { text: q.text }), button(state.answers.get(q.id), () => { state.editingAnswer = q.id; renderPreview(); }, 'chat-bubble chat-bubble--answer', 'Изменить ответ'));
+      chat.append(el('div', 'chat-bubble chat-bubble--bot', { text: questionText(q) }), button(state.answers.get(q.id), () => { state.editingAnswer = q.id; renderPreview(); }, 'chat-bubble chat-bubble--answer', 'Изменить ответ'));
     });
     const current = eligible.find(q => q.id === state.editingAnswer) || eligible.find(q => !state.answers.has(q.id));
     const configError = validate(state.rows); if (configError) { compose.append(el('p', 'inspector-error', { text: configError })); return; }
     if (!current) {
       chat.append(el('div', 'chat-bubble chat-bubble--bot', { text: 'Спасибо! Ожидайте, с вами свяжутся наши сотрудники.' })); compose.append(el('div', 'preview-complete', { text: '✓ Анкета пройдена' }));
     } else {
-      if (state.editingAnswer) chat.append(el('span', 'chat-date', { text: 'ИСПРАВЛЕНИЕ ОТВЕТА' })); chat.append(el('div', 'chat-bubble chat-bubble--bot', { text: current.text }));
+      if (state.editingAnswer) chat.append(el('span', 'chat-date', { text: 'ИСПРАВЛЕНИЕ ОТВЕТА' })); chat.append(el('div', 'chat-bubble chat-bubble--bot', { text: state.editingAnswer ? current.text : questionText(current) }));
       const submit = value => { state.answers.set(current.id, value); state.editingAnswer = null; renderPreview(); };
       if (current.answer_type === 'yes_no') {
         const buttons = el('div', 'chat-answer-buttons'); ['Да', 'Нет'].forEach(value => buttons.append(button(value, () => submit(value), 'chat-answer-button'))); compose.append(buttons);

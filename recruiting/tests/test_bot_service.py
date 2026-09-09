@@ -43,7 +43,7 @@ class BotServiceTests(TestCase):
         self.assertEqual(candidate.current_question, self.questions[0])
         self.assertEqual(candidate.answers.count(), 0)
         self.assertEqual(self.transport.sent[0][0], '77001234567')
-        self.assertIn(GREETING, self.transport.sent[0][1])
+        self.assertEqual(self.transport.sent[0][1], GREETING + '\n\nВаше имя?')
         self.assertTrue(self.transport.sent[0][1].endswith('Ваше имя?'))
         self.assertEqual(candidate.messages.count(), 2)
 
