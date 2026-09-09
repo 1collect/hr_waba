@@ -2,7 +2,7 @@
   'use strict';
 
   const state = {
-    allCandidates: [], candidates: [], query: '', status: 'all',
+    allCandidates: [], candidates: [], query: '', status: 'all', channel: '',
     socket: null, reconnectDelay: 1000, reconnectTimer: null, openCandidate: null
   };
   const refs = {};
@@ -27,7 +27,8 @@
       user: { name: userName, role: 'Сотрудник' },
       items: [
         { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' },
-        { page: 'questions', label: 'Анкета', icon: 'file', href: '/questions/' }
+        { page: 'questions', label: 'Анкета', icon: 'file', href: '/questions/' },
+        { page: 'numbers', label: 'WhatsApp-номера', icon: 'message', href: '/numbers/' }
       ]
     }));
     const topbarContent = UI.topbar({
@@ -101,6 +102,8 @@
   function resetFilters() {
     state.query = '';
     state.status = 'all';
+    state.channel = '';
+    document.getElementById('channel-filter').value = '';
     refs.search.input.value = '';
     renderFilters();
     applyFilters();
@@ -110,6 +113,7 @@
   function applyFilters() {
     const query = state.query.toLocaleLowerCase('ru-RU');
     state.candidates = state.allCandidates.filter((candidate) => {
+      if (state.channel && (candidate.channel_id === null ? 'none' : String(candidate.channel_id)) !== state.channel) return false;
       if (state.status !== 'all' && candidate.status !== state.status) return false;
       if (!query) return true;
       const searchable = [
@@ -124,7 +128,7 @@
       return searchable.includes(query) || phoneMatch;
     });
     document.getElementById('candidate-count').textContent = `Показано: ${state.candidates.length} из ${state.allCandidates.length}`;
-    document.getElementById('reset-filters').hidden = !state.query && state.status === 'all';
+    document.getElementById('reset-filters').hidden = !state.query && state.status === 'all' && !state.channel;
     renderTable();
   }
 
@@ -154,7 +158,7 @@
   function renderTable() {
     const target = document.getElementById('candidates-table');
     if (!state.candidates.length) {
-      const filtered = Boolean(state.query || state.status !== 'all');
+      const filtered = Boolean(state.query || state.status !== 'all' || state.channel);
       target.replaceChildren(UI.emptyState({
         title: filtered ? 'Ничего не найдено' : 'Кандидатов пока нет',
         description: filtered ? 'Попробуйте другое имя, номер или статус.' : 'Новые кандидаты появятся здесь после обращения к боту.',
@@ -175,6 +179,7 @@
       onRowActivate: (row) => openCandidate(row.id),
       columns: [
         { key: 'name', label: 'Кандидат', render: candidateNameCell },
+        { key: 'channel_name', label: 'Рабочий номер', render: row => row.channel_phone ? `${row.channel_name} · ${row.channel_phone}` : 'Без номера' },
         {
           key: 'status_label', label: 'Статус',
           render: (row) => UI.badge({ label: shortStatus(row), variant: row.status_variant })
@@ -314,6 +319,7 @@
     const content = UI.element('div', 'candidate-detail');
     const summary = UI.element('div', 'candidate-detail__summary');
     summary.append(UI.badge({ label: shortStatus(candidate), variant: candidate.status_variant }),
+      UI.element('span', '', { text: candidate.channel_phone ? `${candidate.channel_name} · ${candidate.channel_phone}` : 'Без рабочего номера' }),
       UI.element('span', '', { text: `Ответов: ${candidate.answers.length}` }));
     content.append(
       summary,
@@ -435,6 +441,13 @@
 
   function init() {
     renderShell();
+    const channelFilter = document.getElementById('channel-filter');
+    channelFilter.value = new URLSearchParams(window.location.search).get('channel') || '';
+    state.channel = channelFilter.value;
+    channelFilter.addEventListener('change', () => {
+      state.channel = channelFilter.value;
+      applyFilters();
+    });
     document.getElementById('page-header').replaceChildren(UI.pageHeader({
       title: 'Кандидаты',
       actions: UI.element('a', 'btn btn--secondary', { href: '/questions/', text: 'Настроить анкету' })
