@@ -1,6 +1,19 @@
 from django.db import models
 
 
+class PhoneChannel(models.Model):
+    name = models.CharField('Название', max_length=100)
+    phone_number = models.CharField('Рабочий номер', max_length=16, unique=True)
+    is_active = models.BooleanField('Включён в приложении', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('name', 'id')
+
+    def __str__(self):
+        return f'{self.name} · {self.phone_number}'
+
+
 class Candidate(models.Model):
     class Status(models.TextChoices):
         NEW = 'new', 'Новый'
@@ -10,7 +23,10 @@ class Candidate(models.Model):
         REJECTED = 'rejected', 'Отклонён'
         HIRED = 'hired', 'Нанят'
 
-    external_id = models.CharField('номер / идентификатор', max_length=64, unique=True)
+    external_id = models.CharField('номер / идентификатор', max_length=64)
+    channel = models.ForeignKey(
+        PhoneChannel, null=True, blank=True, on_delete=models.PROTECT, related_name='candidates',
+    )
     display_name = models.CharField('имя в мессенджере', max_length=255, blank=True)
     status = models.CharField(
         'статус', max_length=32, choices=Status.choices, default=Status.NEW, db_index=True
@@ -28,6 +44,11 @@ class Candidate(models.Model):
 
     class Meta:
         ordering = ('-updated_at',)
+        constraints = [
+            models.UniqueConstraint(fields=('channel', 'external_id'), name='unique_channel_candidate'),
+            models.UniqueConstraint(fields=('external_id',), condition=models.Q(channel__isnull=True),
+                                    name='unique_legacy_candidate'),
+        ]
         verbose_name = 'кандидат'
         verbose_name_plural = 'кандидаты'
 

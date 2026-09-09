@@ -66,14 +66,20 @@ class IncomingMessage:
 class BotService:
     """Transport-agnostic questionnaire orchestration."""
 
-    def __init__(self, transport):
+    def __init__(self, transport, channel=None):
         self.transport = transport
+        self.channel = channel
 
     @transaction.atomic
     def handle(self, incoming: IncomingMessage) -> Candidate:
+        if self.channel is not None:
+            from .models import PhoneChannel
+            if not PhoneChannel.objects.select_for_update().filter(pk=self.channel.pk, is_active=True).exists():
+                raise ValueError('Этот номер выключен. Включите его перед проверкой.')
         timestamp = incoming.sent_at or timezone.now()
         candidate, created = Candidate.objects.select_for_update().get_or_create(
             external_id=incoming.sender_id,
+            channel=self.channel,
             defaults={'display_name': incoming.display_name},
         )
         if incoming.display_name and candidate.display_name != incoming.display_name:
@@ -219,7 +225,7 @@ class BotService:
 
     def set_typing(self, sender_id: str, is_typing=True, ttl_seconds=6) -> None:
         typing_until = timezone.now() + timedelta(seconds=ttl_seconds) if is_typing else None
-        Candidate.objects.filter(external_id=sender_id).update(typing_until=typing_until)
+        Candidate.objects.filter(external_id=sender_id, channel=self.channel).update(typing_until=typing_until)
 
     def _send(self, candidate: Candidate, text: str, buttons=None) -> None:
         if not buttons and len(text) > 4000:
