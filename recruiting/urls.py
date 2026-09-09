@@ -5,6 +5,9 @@ from . import views
 app_name = 'recruiting'
 
 urlpatterns = [
+    path('numbers/', views.channels_page, name='channels'),
+    path('numbers/<int:channel_id>/edit/', views.channels_page, name='channel-edit'),
+    path('numbers/<int:channel_id>/test/', views.channel_test_page, name='channel-test'),
     path('login/', views.login_page, name='login'),
     path('candidates/', views.candidates_page, name='candidates'),
     path('questions/', views.questions_page, name='questions'),

@@ -21,8 +21,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 
-from .models import Answer, Candidate, Question
-from .forms import QuestionForm
+from .models import Answer, Candidate, Question, PhoneChannel
+from .forms import QuestionForm, PhoneChannelForm, ChannelTestForm
 from .builder import snapshot, save_scenario, BuilderConflict
 from .services import BotService, IncomingMessage, GREETING, normalize_answer, reconcile_answers
 from .transports import get_transport
@@ -69,7 +69,65 @@ def login_page(request):
 @staff_required
 @ensure_csrf_cookie
 def candidates_page(request):
-    return render(request, 'recruiting/candidates.html')
+    return render(request, 'recruiting/candidates.html', {'channels': PhoneChannel.objects.all()})
+
+
+@staff_required
+@require_http_methods(['GET', 'POST'])
+def channels_page(request, channel_id=None):
+    channel = get_object_or_404(PhoneChannel, pk=channel_id) if channel_id else None
+    form = PhoneChannelForm(instance=channel)
+    if request.method == 'POST':
+        form = PhoneChannelForm(request.POST, instance=channel)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    form.save()
+            except IntegrityError:
+                form.add_error('phone_number', 'Этот номер уже добавлен.')
+            else:
+                messages.success(request, 'Номер сохранён в приложении.')
+                return redirect('recruiting:channels')
+    return render(request, 'recruiting/channels.html', {
+        'channels': PhoneChannel.objects.all(), 'form': form, 'editing': channel,
+    })
+
+
+@staff_required
+@require_http_methods(['GET', 'POST'])
+def channel_test_page(request, channel_id):
+    from .transports.terminal import TerminalTransport
+
+    channel = get_object_or_404(PhoneChannel, pk=channel_id)
+    form = ChannelTestForm(initial={'sender': request.GET.get('sender', '')})
+    if request.method == 'POST':
+        form = ChannelTestForm(request.POST)
+        if form.is_valid():
+            transport = TerminalTransport(output=lambda text: None)
+            transport.name = 'application_test'
+            try:
+                BotService(transport, channel=channel).handle(IncomingMessage(
+                    sender_id=form.cleaned_data['sender'], text=form.cleaned_data['text'],
+                ))
+            except ValueError as exc:
+                form.add_error(None, str(exc))
+            else:
+                from django.urls import reverse
+                return redirect(reverse('recruiting:channel-test', args=[channel.pk]) +
+                                '?sender=' + form.cleaned_data['sender'])
+    sender = form['sender'].value() or ''
+    candidate = None
+    if sender:
+        from .forms import normalize_phone
+        from django.core.exceptions import ValidationError
+        try:
+            sender = normalize_phone(sender).lstrip('+')
+            candidate = Candidate.objects.filter(channel=channel, external_id=sender).first()
+        except ValidationError:
+            pass
+    return render(request, 'recruiting/channel_test.html', {
+        'channel': channel, 'form': form, 'candidate': candidate,
+    })
 
 
 @staff_required
@@ -175,6 +233,9 @@ def _candidate_summary(candidate):
     return {
         'id': candidate.id,
         'external_id': candidate.external_id,
+        'channel_id': candidate.channel_id,
+        'channel_name': candidate.channel.name if candidate.channel_id else 'Без номера',
+        'channel_phone': candidate.channel.phone_number if candidate.channel_id else '',
         'display_name': candidate.display_name,
         'name': primary.get('full_name') or candidate.display_name or candidate.external_id,
         'status': candidate.status,
@@ -192,11 +253,18 @@ def _candidate_summary(candidate):
 @staff_required
 @require_GET
 def candidate_list_api(request):
-    candidates = Candidate.objects.select_related('current_question').prefetch_related(
+    candidates = Candidate.objects.select_related('current_question', 'channel').prefetch_related(
         'answers__question'
     )
     query = request.GET.get('q', '').strip()
     status = request.GET.get('status', '').strip()
+    channel_id = request.GET.get('channel', '').strip()
+    if channel_id == 'none':
+        candidates = candidates.filter(channel__isnull=True)
+    elif channel_id:
+        if not channel_id.isascii() or not channel_id.isdecimal() or len(channel_id) > 18:
+            return HttpResponseBadRequest('Invalid channel ID')
+        candidates = candidates.filter(channel_id=int(channel_id))
     if query:
         candidates = candidates.filter(
             Q(external_id__icontains=query) | Q(display_name__icontains=query)
@@ -211,7 +279,7 @@ def candidate_list_api(request):
 @require_GET
 def candidate_detail_api(request, candidate_id):
     candidate = get_object_or_404(
-        Candidate.objects.select_related('current_question').prefetch_related(
+        Candidate.objects.select_related('current_question', 'channel').prefetch_related(
             'answers__question', 'messages'
         ),
         pk=candidate_id,

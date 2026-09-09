@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}WhatsApp-номера{% endblock %} — Рекрутинг</title>
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/reset.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/layout.css' %}">
+  <link rel="stylesheet" href="{% static 'hr-tech-dashboard/css/channels.css' %}">
+  <script src="{% static 'hr-tech-dashboard/js/components.js' %}" defer></script>
+  <script src="{% static 'hr-tech-dashboard/js/channels.js' %}" defer></script>
+</head>
+<body data-user-name="{{ request.user.get_full_name|default:request.user.username }}">
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Навигация"><nav><a href="/candidates/">Кандидаты</a> <a href="/questions/">Анкета</a> <a href="/numbers/">WhatsApp-номера</a></nav></aside>
+    <div class="main"><header class="topbar" id="topbar"></header>
+      <main class="page numbers-page" id="main-content">
+        {% for message in messages %}<p class="number-notice" role="status">{{ message }}</p>{% endfor %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  <div id="app-overlays"></div>
+</body>
+</html>

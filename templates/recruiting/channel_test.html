@@ -1,0 +1,23 @@
+{% extends 'recruiting/channels_base.html' %}
+{% block title %}Проверка диалога{% endblock %}
+{% block content %}
+<a href="{% url 'recruiting:channels' %}">← Все номера</a>
+<header class="page-header"><h1 class="page-header__title">{{ channel.name }} · {{ channel.phone_number }}</h1></header>
+<p class="number-help">Проверка внутри приложения. Сообщения не отправляются в WhatsApp. Тестовая переписка и анкета сохраняются в списке кандидатов этого рабочего номера.</p>
+{% if not channel.is_active %}<p class="number-notice" role="status">Номер выключен. Для продолжения включите его в <a href="{% url 'recruiting:channel-edit' channel.pk %}">настройках</a>.</p>{% endif %}
+<div class="numbers-grid">
+  <section class="card number-card"><h2>Диалог</h2>
+    <div class="number-thread" aria-label="История сообщений">
+    {% for message in candidate.messages.all %}
+      <article class="number-message number-message--{{ message.direction }}"><strong>{% if message.direction == 'incoming' %}Кандидат{% else %}Бот{% endif %}</strong><p>{{ message.text }}</p></article>
+    {% empty %}<p>Введите номер тестового кандидата и отправьте первое сообщение, например «Здравствуйте».</p>{% endfor %}
+    </div>
+  </section>
+  <section class="card number-card"><h2>Сообщение кандидата</h2>
+    <form method="post" class="number-form">{% csrf_token %}{{ form.as_p }}
+      <button class="btn btn--primary" type="submit" {% if not channel.is_active %}disabled{% endif %}>Отправить в тестовый диалог</button>
+    </form>
+    <p class="number-help">Продолжайте с тем же номером кандидата, чтобы ответить на следующий вопрос. На другом рабочем номере анкета начнётся отдельно.</p>
+  </section>
+</div>
+{% endblock %}

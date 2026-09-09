@@ -20,7 +20,8 @@
   const user = { name: document.body.dataset.userName || 'Пользователь', role: 'Сотрудник' };
   sidebar.replaceChildren(UI.sidebar({ activePage: 'questions', user, items: [
     { page: 'candidates', label: 'Кандидаты', icon: 'users', href: '/candidates/' },
-    { page: 'questions', label: 'Конструктор', icon: 'file', href: '/questions/' }
+    { page: 'questions', label: 'Конструктор', icon: 'file', href: '/questions/' },
+    { page: 'numbers', label: 'WhatsApp-номера', icon: 'message', href: '/numbers/' }
   ] }));
   const backdrop = el('div', 'sidebar-backdrop', { hidden: true });
   function toggleMenu(open) {

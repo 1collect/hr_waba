@@ -1,0 +1,30 @@
+{% extends 'recruiting/channels_base.html' %}
+{% block content %}
+<header class="page-header"><h1 class="page-header__title">WhatsApp-номера</h1></header>
+<p class="number-help">Добавляйте рабочие номера и проверяйте анкету внутри приложения. Отправка и получение сообщений WhatsApp пока не подключены.</p>
+<div class="numbers-grid">
+  <section class="number-list" aria-label="Рабочие номера">
+    {% for channel in channels %}
+    <article class="card number-card">
+      <h2>{{ channel.name }}</h2><p>{{ channel.phone_number }}</p>
+      <span class="badge {% if channel.is_active %}badge--success{% else %}badge--neutral{% endif %}">{% if channel.is_active %}Включён в приложении{% else %}Выключен{% endif %}</span>
+      <p class="number-help">WhatsApp не подключён</p>
+      <div class="number-actions">
+        <a class="btn btn--secondary btn--sm" href="{% url 'recruiting:channel-edit' channel.pk %}">Настроить</a>
+        <a class="btn btn--ghost btn--sm" href="{% url 'recruiting:channel-test' channel.pk %}">Проверить диалог</a>
+        <a class="btn btn--ghost btn--sm" href="{% url 'recruiting:candidates' %}?channel={{ channel.pk }}">Кандидаты</a>
+      </div>
+    </article>
+    {% empty %}<div class="card number-card"><h2>Добавьте первый номер</h2><p>Укажите название отдела или филиала и рабочий телефон.</p></div>{% endfor %}
+  </section>
+  <section class="card number-card">
+    <h2>{% if editing %}Настройки номера{% else %}Добавить номер{% endif %}</h2>
+    <form method="post" class="number-form">{% csrf_token %}
+      {{ form.as_p }}
+      <p class="number-help">Выключение приостанавливает проверку диалогов. История и анкеты сохраняются.</p>
+      <div class="number-actions"><button class="btn btn--primary" type="submit">Сохранить</button>
+      {% if editing %}<a class="btn btn--secondary" href="{% url 'recruiting:channels' %}">Отмена</a>{% endif %}</div>
+    </form>
+  </section>
+</div>
+{% endblock %}

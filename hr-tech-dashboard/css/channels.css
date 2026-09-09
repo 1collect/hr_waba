@@ -1,0 +1,17 @@
+.numbers-page { display: grid; gap: 20px; }
+.numbers-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
+.number-list { display: grid; gap: 16px; }
+.number-card { padding: 24px; display: grid; gap: 14px; min-width: 0; overflow-wrap: anywhere; }
+.number-card h2 { font-size: 18px; font-weight: 600; }
+.number-help { color: #626775; line-height: 1.6; }
+.number-form, .number-form p { display: grid; gap: 10px; }
+.number-form { gap: 18px; }
+.number-form input[type="checkbox"] { width: 18px; height: 18px; }
+.number-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.number-notice { padding: 14px; background: #eef4ff; border-radius: 10px; }
+.number-form .errorlist { color: #b42318; }
+.number-thread { display: grid; gap: 12px; max-height: 60vh; overflow-y: auto; }
+.number-message { background: #f1f3f5; padding: 14px; border-radius: 12px; margin-right: 24px; }
+.number-message--outgoing { background: #eaf5ee; margin-right: 0; margin-left: 24px; }
+.number-message p { white-space: pre-wrap; }
+@media (max-width: 800px) { .numbers-grid { grid-template-columns: 1fr; } .number-card { padding: 16px; } }
