@@ -5,10 +5,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import Answer, Candidate, Message, Question
+from .questionnaire_ai import get_questionnaire_analyzer
 
 
 COMPLETION_MESSAGE = 'Спасибо! Ожидайте, с вами свяжутся наши сотрудники.'
-GREETING = 'Здравствуйте! Для рассмотрения вашей кандидатуры, пожалуйста, ответьте на несколько вопросов:'
+GREETING = ('Здравствуйте! Для рассмотрения вашей кандидатуры ответьте, пожалуйста, '
+            'на вопросы одним сообщением — можно по номерам или в свободной форме:')
 EDIT_HELP = 'Чтобы посмотреть и исправить ответы, отправьте /ответы. Для изменения отправьте /изменить и номер вопроса, например /изменить 1.'
 
 
@@ -66,9 +68,10 @@ class IncomingMessage:
 class BotService:
     """Transport-agnostic questionnaire orchestration."""
 
-    def __init__(self, transport, channel=None):
+    def __init__(self, transport, channel=None, analyzer=None):
         self.transport = transport
         self.channel = channel
+        self.analyzer = analyzer or get_questionnaire_analyzer()
 
     @transaction.atomic
     def handle(self, incoming: IncomingMessage) -> Candidate:
@@ -145,7 +148,7 @@ class BotService:
             candidate.survey_started_at = timestamp
             candidate.current_question = first_question
             candidate.save()
-            self._send_question(candidate, first_question, greeting=True)
+            self._send_questionnaire(candidate, greeting=True)
             return candidate
 
         command = incoming.text.strip().casefold()
@@ -185,17 +188,55 @@ class BotService:
             f'question:{current_question.pk}:yes', f'question:{current_question.pk}:no',
         ):
             return candidate
-        try:
-            answer_text = normalize_answer(current_question, incoming.text)
-        except ValueError as exc:
-            self._send(candidate, str(exc))
-            self._send_question(candidate, current_question)
-            return candidate
-        Answer.objects.update_or_create(
-            candidate=candidate,
-            question=current_question,
-            defaults={'text': answer_text},
+        unanswered = [
+            question for question in eligible_questions(candidate)
+            if not candidate.answers.filter(question=question).exists()
+        ]
+        extraction_questions = (
+            [current_question]
+            if candidate.answers.filter(question=current_question).exists()
+            else unanswered
         )
+        # Interactive buttons always answer the one question embedded in their ID.
+        if button_id:
+            extracted = [(current_question, incoming.text)]
+        else:
+            previous_prompt = candidate.messages.filter(
+                direction=Message.Direction.OUTGOING
+            ).values_list('text', flat=True).last() or ''
+            try:
+                extracted = [
+                    (next((q for q in extraction_questions if q.pk == item.question_id), None), item.text)
+                    for item in self.analyzer.extract(incoming.text, extraction_questions, previous_prompt)
+                ]
+            except RuntimeError as exc:
+                self._send(candidate, str(exc) + ' Попробуйте ещё раз.')
+                return candidate
+
+        saved = 0
+        errors = []
+        seen = set()
+        for question, raw_answer in extracted:
+            if not question or question.pk in seen:
+                continue
+            seen.add(question.pk)
+            try:
+                answer_text = normalize_answer(question, raw_answer)
+            except ValueError as exc:
+                errors.append(f'{question.position}. {exc}')
+                continue
+            Answer.objects.update_or_create(
+                candidate=candidate,
+                question=question,
+                defaults={'text': answer_text},
+            )
+            saved += 1
+
+        if not saved:
+            message = '\n'.join(errors) if errors else 'Не удалось распознать ответы. Ответьте по номерам или каждый ответ с новой строки.'
+            self._send(candidate, message)
+            self._send_questionnaire(candidate)
+            return candidate
         candidate.current_question = reconcile_answers(candidate)
         self._advance(candidate, timestamp)
         return candidate
@@ -203,7 +244,7 @@ class BotService:
     def _advance(self, candidate, timestamp):
         if candidate.current_question:
             candidate.save()
-            self._send_question(candidate, candidate.current_question)
+            self._send_questionnaire(candidate)
         else:
             candidate.status = Candidate.Status.SURVEY_COMPLETED
             candidate.current_question = None
@@ -222,6 +263,24 @@ class BotService:
                 {'id': f'question:{question.pk}:no', 'title': 'Нет'},
             ]
         self._send(candidate, text, buttons)
+
+    def _send_questionnaire(self, candidate, greeting=False):
+        answered = set(candidate.answers.values_list('question_id', flat=True))
+        questions = [q for q in eligible_questions(candidate) if q.pk not in answered]
+        if not questions:
+            return
+        candidate.current_question = questions[0]
+        candidate.save(update_fields=('current_question', 'updated_at'))
+        if len(questions) == 1:
+            self._send_question(candidate, questions[0], greeting=greeting)
+            return
+        prefix = (
+            GREETING + '\n\n'
+            if greeting
+            else f'Спасибо! Осталось уточнить {len(questions)} — ответьте одним сообщением:\n\n'
+        )
+        text = prefix + '\n'.join(f'{q.position}. {q.text}' for q in questions)
+        self._send(candidate, text)
 
     def set_typing(self, sender_id: str, is_typing=True, ttl_seconds=6) -> None:
         typing_until = timezone.now() + timedelta(seconds=ttl_seconds) if is_typing else None

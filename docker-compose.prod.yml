@@ -1,0 +1,31 @@
+services:
+  web:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      DJANGO_DEBUG: "False"
+    command: >-
+      sh -c "python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    expose:
+      - "8000"
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command:
+      - http
+      - --log=stdout
+      - --authtoken=${NGROK_AUTHTOKEN}
+      - ${NGROK_DOMAIN:+--domain=${NGROK_DOMAIN}}
+      - web:8000
+    depends_on:
+      - web
+    restart: unless-stopped

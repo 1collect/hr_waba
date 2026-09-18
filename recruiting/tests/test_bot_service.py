@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from recruiting.models import Answer, Candidate, Message, Question
+from recruiting.questionnaire_ai import ExtractedAnswer
 from recruiting.services import BotService, COMPLETION_MESSAGE, GREETING, IncomingMessage
 from recruiting.transports.base import MessageTransport, SendResult
 
@@ -43,8 +44,10 @@ class BotServiceTests(TestCase):
         self.assertEqual(candidate.current_question, self.questions[0])
         self.assertEqual(candidate.answers.count(), 0)
         self.assertEqual(self.transport.sent[0][0], '77001234567')
-        self.assertEqual(self.transport.sent[0][1], GREETING + '\n\nВаше имя?')
-        self.assertTrue(self.transport.sent[0][1].endswith('Ваше имя?'))
+        self.assertEqual(
+            self.transport.sent[0][1],
+            GREETING + '\n\n1. Ваше имя?\n2. Ваш город?',
+        )
         self.assertEqual(candidate.messages.count(), 2)
 
     def test_answers_are_saved_one_at_a_time_then_survey_completes(self):
@@ -61,6 +64,39 @@ class BotServiceTests(TestCase):
         )
         self.assertEqual(self.transport.sent[-1][1], COMPLETION_MESSAGE)
         self.assertEqual(Message.objects.filter(candidate=candidate).count(), 6)
+
+    def test_numbered_answers_complete_the_whole_questionnaire_at_once(self):
+        self.service.handle(IncomingMessage(sender_id='77001234567', text='Старт'))
+
+        candidate = self.service.handle(IncomingMessage(
+            sender_id='77001234567',
+            text='1. Иван Петров\n2. Алматы',
+        ))
+
+        candidate.refresh_from_db()
+        self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
+        self.assertEqual(
+            list(candidate.answers.values_list('text', flat=True)),
+            ['Иван Петров', 'Алматы'],
+        )
+        self.assertEqual(Message.objects.filter(candidate=candidate).count(), 4)
+
+    def test_ai_analyzer_can_extract_multiple_answers_from_free_text(self):
+        class FakeAnalyzer:
+            def extract(inner_self, text, questions, previous_prompt=''):
+                return [
+                    ExtractedAnswer(questions[0].pk, 'Иван Петров'),
+                    ExtractedAnswer(questions[1].pk, 'Алматы'),
+                ]
+
+        service = BotService(self.transport, analyzer=FakeAnalyzer())
+        service.handle(IncomingMessage(sender_id='77001234567', text='Старт'))
+        candidate = service.handle(IncomingMessage(
+            sender_id='77001234567', text='Меня зовут Иван Петров, живу в Алматы',
+        ))
+
+        self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
+        self.assertEqual(candidate.answers.count(), 2)
 
     def test_duplicate_external_message_is_idempotent(self):
         incoming = IncomingMessage(

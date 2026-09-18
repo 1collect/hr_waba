@@ -27,7 +27,9 @@ class QuestionnaireFlowTests(TestCase):
 
     def test_yes_no_validation_and_branching(self):
         candidate = self.send('Привет')
-        self.assertEqual(candidate.messages.last().metadata['buttons'][0]['title'], 'Да')
+        self.assertEqual(candidate.messages.last().metadata['buttons'], [])
+        self.assertIn('1. Учитесь?', candidate.messages.last().text)
+        self.assertIn('3. Последнее место работы?', candidate.messages.last().text)
         candidate = self.send('Возможно')
         self.assertEqual(candidate.current_question, self.parent)
         self.assertFalse(candidate.answers.exists())

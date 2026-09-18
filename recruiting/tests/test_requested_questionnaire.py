@@ -11,7 +11,7 @@ class QuestionnaireTransport(RecordingTransport):
 
 
 class RequestedQuestionnaireTests(TestCase):
-    def test_seeded_questions_are_sent_one_at_a_time(self):
+    def test_seeded_questions_are_sent_as_one_questionnaire(self):
         expected = [
             'Ваше полное ФИО?',
             'Сколько Вам лет?',
@@ -24,11 +24,23 @@ class RequestedQuestionnaireTests(TestCase):
         transport = QuestionnaireTransport()
         service = BotService(transport)
         candidate = service.handle(IncomingMessage(sender_id='survey-test', text='Здравствуйте'))
-        self.assertEqual([text for _, text in transport.sent], [GREETING + '\n\n' + expected[0]])
+        questionnaire = GREETING + '\n\n' + '\n'.join(
+            f'{position}. {question}' for position, question in enumerate(expected, 1)
+        )
+        self.assertEqual([text for _, text in transport.sent], [questionnaire])
         self.assertEqual(candidate.answers.count(), 0)
-        for index, answer in enumerate(['Иванов Иван Иванович', '25', 'Нет', 'Нет', 'Нет', 'Магазин']):
-            candidate = service.handle(IncomingMessage(sender_id='survey-test', text=answer))
-            self.assertEqual(len(transport.sent), index + 2)
-            self.assertEqual(candidate.answers.count(), index + 1)
-            self.assertEqual(transport.sent[-1][1], expected[index + 1] if index < 5 else COMPLETION_MESSAGE)
+        candidate = service.handle(IncomingMessage(
+            sender_id='survey-test',
+            text=(
+                '1. Иванов Иван Иванович\n'
+                '2. 25\n'
+                '3. Нет\n'
+                '4. Нет\n'
+                '5. Нет\n'
+                '6. Магазин'
+            ),
+        ))
+        self.assertEqual(len(transport.sent), 2)
+        self.assertEqual(candidate.answers.count(), 6)
+        self.assertEqual(transport.sent[-1][1], COMPLETION_MESSAGE)
         self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
