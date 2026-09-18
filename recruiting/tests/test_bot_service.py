@@ -98,6 +98,40 @@ class BotServiceTests(TestCase):
         self.assertEqual(candidate.status, Candidate.Status.SURVEY_COMPLETED)
         self.assertEqual(candidate.answers.count(), 2)
 
+    def test_message_without_any_answer_is_ignored_without_outgoing_reply(self):
+        class SilentAnalyzer:
+            def extract(inner_self, text, questions, previous_prompt=''):
+                return []
+
+        service = BotService(self.transport, analyzer=SilentAnalyzer())
+        service.handle(IncomingMessage(sender_id='77001234567', text='Старт'))
+        self.transport.sent.clear()
+
+        candidate = service.handle(IncomingMessage(
+            sender_id='77001234567', text='Расскажите подробнее о вакансии',
+        ))
+
+        self.assertEqual(candidate.answers.count(), 0)
+        self.assertEqual(self.transport.sent, [])
+        self.assertEqual(candidate.messages.filter(direction=Message.Direction.INCOMING).count(), 2)
+
+    def test_one_answer_produces_only_one_followup_message(self):
+        class PartialAnalyzer:
+            def extract(inner_self, text, questions, previous_prompt=''):
+                return [ExtractedAnswer(questions[0].pk, 'Иван Петров')]
+
+        service = BotService(self.transport, analyzer=PartialAnalyzer())
+        service.handle(IncomingMessage(sender_id='77001234567', text='Старт'))
+        self.transport.sent.clear()
+
+        candidate = service.handle(IncomingMessage(
+            sender_id='77001234567', text='Меня зовут Иван Петров',
+        ))
+
+        self.assertEqual(candidate.answers.count(), 1)
+        self.assertEqual(len(self.transport.sent), 1)
+        self.assertIn('Ваш город?', self.transport.sent[0][1])
+
     def test_duplicate_external_message_is_idempotent(self):
         incoming = IncomingMessage(
             sender_id='77001234567', text='Старт', external_message_id='wamid.123'

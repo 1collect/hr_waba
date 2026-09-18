@@ -209,12 +209,13 @@ class BotService:
                     (next((q for q in extraction_questions if q.pk == item.question_id), None), item.text)
                     for item in self.analyzer.extract(incoming.text, extraction_questions, previous_prompt)
                 ]
-            except RuntimeError as exc:
-                self._send(candidate, str(exc) + ' Попробуйте ещё раз.')
+            except RuntimeError:
+                # The candidate's message is still stored and can be analyzed
+                # together with a later message. Do not spend a reply on an
+                # AI/transport error.
                 return candidate
 
         saved = 0
-        errors = []
         seen = set()
         for question, raw_answer in extracted:
             if not question or question.pk in seen:
@@ -222,8 +223,7 @@ class BotService:
             seen.add(question.pk)
             try:
                 answer_text = normalize_answer(question, raw_answer)
-            except ValueError as exc:
-                errors.append(f'{question.position}. {exc}')
+            except ValueError:
                 continue
             Answer.objects.update_or_create(
                 candidate=candidate,
@@ -233,9 +233,9 @@ class BotService:
             saved += 1
 
         if not saved:
-            message = '\n'.join(errors) if errors else 'Не удалось распознать ответы. Ответьте по номерам или каждый ответ с новой строки.'
-            self._send(candidate, message)
-            self._send_questionnaire(candidate)
+            # No answer means no outgoing WhatsApp message. This keeps the
+            # conversation quiet while allowing the next candidate message to
+            # be analyzed normally.
             return candidate
         candidate.current_question = reconcile_answers(candidate)
         self._advance(candidate, timestamp)
